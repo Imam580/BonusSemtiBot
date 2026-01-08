@@ -721,43 +721,46 @@ app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
-app.add_handler(
-    MessageHandler(tg_filters.Regex(r"^!sil \d+$"), sil)
-)
+app.add_handler(MessageHandler(tg_filters.Regex(r"^!sil \d+$"), sil))
 
 app.add_handler(CommandHandler("cekilis", cekilis))
-app.add_handler(CommandHandler("sayi", sayi))   # <-- /sayi BURADA
+app.add_handler(CommandHandler("sayi", sayi))
 app.add_handler(CommandHandler("mesaj", mesaj))
 app.add_handler(CommandHandler("bitir", bitir))
 app.add_handler(CommandHandler("kontrol", kontrol))
 app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilise_katil$"))
+
+# ================== FİLTRELER (ÇOK ÖNEMLİ SIRA) ==================
+
+# 1️⃣ KÜFÜR (EN ÖNCE)
 app.add_handler(
     MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, kufur_kontrol),
-    group=1
-)
-
-app.add_handler(
-    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, link_engel),
-    group=2
-)
-
-app.add_handler(
-    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, spam_kontrol),
-    group=3
-)
-
-
-app.add_handler(
-    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, mesaj_say),
     group=0
 )
 
-# === EN SON: NORMAL MESAJLAR ===
+# 2️⃣ LİNK
 app.add_handler(
-    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message)
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, link_engel),
+    group=1
 )
 
+# 3️⃣ SPAM
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, spam_kontrol),
+    group=2
+)
 
+# 4️⃣ MESAJ SAYACI (SADECE SAYAR, CEZA YOK)
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, mesaj_say),
+    group=3
+)
+
+# 5️⃣ SİTE / REKLAM LİNKLERİ (EN SON)
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message),
+    group=4
+)
 
 if __name__ == "__main__":
     app.run_polling()
