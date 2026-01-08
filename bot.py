@@ -776,10 +776,15 @@ app.add_handler(
     group=0
 )
 
+# ================== EVERY HANDLER ==================
 app.add_handler(
-    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, every_kontrol),
-    group=0
+    MessageHandler(
+        tg_filters.Regex(r"(?i)\bevery\b"),
+        every_kontrol
+    ),
+    group=-1
 )
+
 
 # 2️⃣ LİNK
 app.add_handler(
