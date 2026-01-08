@@ -32,16 +32,16 @@ cekilis_kazananlar = []
 BOT_BASLANGIC_ZAMANI = time.time()
 kullanici_mesaj_sayisi = {}
 min_mesaj_sayisi = 0
-EVERY_BUTONLARI = [
-    # Sponsorumuz
+EVERY_SPONSOR = [
     ("HIZLICASINO", "https://shoort.im/hizlicasino"),
     ("EGEBET", "https://shoort.im/egebet"),
     ("KAVBET", "https://shoort.im/kavbet"),
     ("PUSULABET", "https://shoort.im/pusulabet"),
     ("HITBET", "https://shoort.im/hitbet"),
     ("ARTEMISBET", "https://shoort.im/artemisbet"),
+]
 
-    # Diğerleri
+EVERY_DIGER = [
     ("SOSYAL DAVET", "https://linkturbo.co/sosyaldavet"),
     ("MATGUNCEL", "http://dub.is/matguncel"),
     ("JOJOBET", "http://dub.pro/jojoyagit"),
@@ -85,7 +85,7 @@ DOGUM_BONUS_BUTONLARI = [
 
 # ================= KÜFÜR / SPAM =================
 KUFUR_LISTESI = [
-    "amk","aq","amq","orospu","orospu çocuğu","piç","ibne",
+    "amk","amq","orospu","orospu çocuğu","piç","ibne",
     "yarrak","yarak","sik","siktir","amcık","anan","amına"
 ]
 
@@ -313,11 +313,19 @@ async def site_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for k, v in filters_dict.items():
         if k in text:
             kb = InlineKeyboardMarkup(
-                [[InlineKeyboardButton(f"🔗 {k.upper()} GİRİŞ", url=v)]]
+                [[InlineKeyboardButton(
+                    f"🔗 {k.upper()}",
+                    url=v
+                )]]
             )
-            await update.message.reply_text("Giriş linki:", reply_markup=kb)
-            return
 
+            await update.message.reply_text(
+                f"✅ <b>{k.upper()}</b>\n\n"
+                "👇 <b>Butona tıklayarak siteye yönelebilirsiniz.</b>",
+                reply_markup=kb,
+                parse_mode="HTML"
+            )
+            return
 # ================= EVERY =================
 async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
@@ -327,20 +335,35 @@ async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keyboard = []
-    row = []
 
-    for i, (isim, link) in enumerate(EVERY_BUTONLARI, start=1):
-        row.append(InlineKeyboardButton(isim, url=link))
+    # --- Sponsor Butonları ---
+    sponsor_row = []
+    for i, (isim, link) in enumerate(EVERY_SPONSOR, start=1):
+        sponsor_row.append(InlineKeyboardButton(isim, url=link))
         if i % 2 == 0:
-            keyboard.append(row)
-            row = []
+            keyboard.append(sponsor_row)
+            sponsor_row = []
+    if sponsor_row:
+        keyboard.append(sponsor_row)
 
-    if row:
-        keyboard.append(row)
+    # Ayraç satırı (boşluk hissi verir)
+    keyboard.append([InlineKeyboardButton("────────────", callback_data="bos")])
+
+    # --- Diğer Siteler ---
+    diger_row = []
+    for i, (isim, link) in enumerate(EVERY_DIGER, start=1):
+        diger_row.append(InlineKeyboardButton(isim, url=link))
+        if i % 2 == 0:
+            keyboard.append(diger_row)
+            diger_row = []
+    if diger_row:
+        keyboard.append(diger_row)
 
     await update.message.reply_text(
         "🔥 **BonusSemti Güvencesiyle EveryMatrix Altyapılı Siteler**\n\n"
-        "Aşağıdaki butonlardan giriş yapabilirsiniz:",
+        "⭐ **Sponsorumuz Olan Siteler**\n\n"
+        "👇 **Butona tıklayarak siteye yönelebilirsiniz.**\n\n"
+        "🔹 *Aşağıda diğer EveryMatrix siteleri de yer almaktadır.*",
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="Markdown"
     )
