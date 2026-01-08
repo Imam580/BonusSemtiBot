@@ -231,25 +231,6 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
 
-    async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-
-    if not context.args or not context.args[0].isdigit():
-        await update.message.reply_text("Kullanım: !sil 10")
-        return
-
-    adet = int(context.args[0])
-
-    for i in range(adet):
-        try:
-            await context.bot.delete_message(
-                chat_id=update.effective_chat.id,
-                message_id=update.message.message_id - i
-            )
-        except:
-            pass
-
 # --- /remove filters ---
 async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
