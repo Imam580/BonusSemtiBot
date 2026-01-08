@@ -296,6 +296,44 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
 
+   # ================== EVERY KONTROL ==================
+async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    text = update.message.text.lower()
+
+    if "every" not in text:
+        return
+
+    await update.message.reply_text(
+        (
+            "🔥 <b>BonusSemti Güvencesiyle Sponsorumuz Olan EveryMatrix Altyapılı Siteler</b>\n\n"
+            "🔗 https://shoort.im/hizlicasino\n"
+            "🔗 https://shoort.im/egebet\n"
+            "🔗 https://shoort.im/kavbet\n"
+            "🔗 https://shoort.im/pusulabet\n"
+            "🔗 https://shoort.im/hitbet\n"
+            "🔗 https://shoort.im/artemisbet\n\n"
+            "<b>🔥 DİĞER EVERYMATRİX ALTYAPISINDA OLAN SİTELER</b>\n\n"
+            "🔗 https://linkturbo.co/sosyaldavet\n"
+            "🔗 http://dub.is/matguncel\n"
+            "🔗 http://dub.pro/jojoyagit\n"
+            "🔗 https://dub.pro/holiguncel\n"
+            "🔗 http://dub.is/betsmoveguncel\n"
+            "🔗 http://lunalink.org/lunasosyal/\n"
+            "🔗 https://dub.is/megaguncel\n"
+            "🔗 https://dub.is/zirveguncel\n"
+            "🔗 http://dub.is/odeonguncel\n"
+            "🔗 http://dub.is/maviguncel\n"
+            "🔗 https://linkelit.co/sosyaldavet\n"
+            "🔗 http://shoort.in/coinbar\n"
+            "🔗 https://shoort.in/nakitbahis"
+        ),
+        parse_mode="HTML"
+    )
+
+
 
 # --- Link engeli ---
 async def link_engel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -735,6 +773,11 @@ app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilise_katil$"))
 # 1️⃣ KÜFÜR (EN ÖNCE)
 app.add_handler(
     MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, kufur_kontrol),
+    group=0
+)
+
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, every_kontrol),
     group=0
 )
 
