@@ -2,6 +2,7 @@ import os
 import random
 import time
 from dotenv import load_dotenv
+from telegram import ChatPermissions
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -259,7 +260,9 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Filtre eklendi: {site_ismi} → {site_linki}")
 
    # --- Küfür engeli ---
+# --- Küfür engeli ---
 async def kufur_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     if not update.message or not update.message.text:
         return
 
@@ -303,7 +306,6 @@ async def kufur_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # --- /filtre komutu ---
-async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         await update.message.reply_text("❌ Sadece yönetici kullanabilir!")
         return
@@ -320,7 +322,7 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(f"❌ {site_ismi} filtresi bulunamadı!")
 
-     async def show_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ async def show_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         await update.message.reply_text("❌ Sadece yönetici kullanabilir!")
         return
@@ -331,15 +333,6 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
-
-
-    msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
-    await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
-
-
-async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
 
 
 
