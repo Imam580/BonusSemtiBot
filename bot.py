@@ -587,8 +587,6 @@ app.add_handler(
     group=0
 )
 
-)
-
 # === EN SON: NORMAL MESAJLAR ===
 app.add_handler(
     MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message)
