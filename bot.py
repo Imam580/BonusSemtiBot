@@ -27,6 +27,22 @@ TOKEN = os.getenv("TOKEN")
 
 # ================= GLOBAL =================
 BOT_START = time.time()
+# === ÇEKİLİŞ GLOBAL ===
+cekilis_aktif = False
+cekilis_katilimcilar = set()
+cekilis_kazanan_sayisi = 1
+cekilis_kazananlar = []
+
+ZORUNLU_KANALLAR = [
+    "@Canli_Izleme_Mac_Linkleri",
+    "@plasespor",
+    "@bonussemti",
+    "@bonussemtietkinlik",
+    "@hergunikioran",
+    "@BahisKarhanesi",
+    "@ozel_oran_2024",
+]
+
 
 # ---- çekiliş ----
 cekilis_aktif = False
@@ -251,27 +267,136 @@ async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= ÇEKİLİŞ =================
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global cekilis_aktif
+    global cekilis_aktif, cekilis_katilimcilar
+
     if not await is_admin(update, context):
         return
-    cekilis_aktif=True
+
+    cekilis_aktif = True
     cekilis_katilimcilar.clear()
-    kb=InlineKeyboardMarkup([[InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL",callback_data="katil")]])
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="cekilise_katil")]
+    ])
+
     await context.bot.send_photo(
-        update.effective_chat.id,
-        photo=open("cekilis.jpg","rb"),
-        caption="🎉 **ÇEKİLİŞ BAŞLADI**",
-        reply_markup=kb,
-        parse_mode="Markdown"
+        chat_id=update.effective_chat.id,
+        photo=open("cekilis.jpg", "rb"),
+        caption=(
+            "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
+            "👥 <b>KATILIMCI SAYISI:</b> 0\n\n"
+            "📌 <b>Katılım Şartları</b>\n"
+            "• Kanallarımızı takip et\n"
+            "• Aktif üye ol\n\n"
+            "📢 <b>Zorunlu Kanallar</b>\n"
+            "🔹 https://t.me/Canli_Izleme_Mac_Linkleri\n"
+            "🔹 https://t.me/plasespor\n"
+            "🔹 https://t.me/bonussemti\n"
+            "🔹 https://t.me/bonussemtietkinlik\n"
+            "🔹 https://t.me/hergunikioran\n"
+            "🔹 https://t.me/BahisKarhanesi\n"
+            "🔹 https://t.me/ozel_oran_2024"
+        ),
+        reply_markup=keyboard,
+        parse_mode="HTML"
     )
 
+
 async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q=update.callback_query
-    await q.answer()
-    cekilis_katilimcilar.add(q.from_user.id)
-    await q.edit_message_caption(
-        f"🎉 Katılımcı: {len(cekilis_katilimcilar)}"
+    global cekilis_katilimcilar
+
+    query = update.callback_query
+    await query.answer()
+
+    if not cekilis_aktif:
+        return
+
+    uid = query.from_user.id
+
+    if uid in cekilis_katilimcilar:
+        await query.answer("Zaten katıldın 😊", show_alert=True)
+        return
+
+    cekilis_katilimcilar.add(uid)
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="cekilise_katil")]
+    ])
+
+    await query.edit_message_caption(
+        caption=query.message.caption.replace(
+            "KATILIMCI SAYISI:</b>",
+            f"KATILIMCI SAYISI:</b> {len(cekilis_katilimcilar)}"
+        ),
+        reply_markup=keyboard,
+        parse_mode="HTML"
     )
+
+async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global cekilis_kazanan_sayisi
+
+    if not await is_admin(update, context):
+        return
+
+    if not context.args or not context.args[0].isdigit():
+        await update.message.reply_text("Kullanım: /sayi 3")
+        return
+
+    cekilis_kazanan_sayisi = int(context.args[0])
+    await update.message.reply_text(
+        f"🎯 Kazanan sayısı {cekilis_kazanan_sayisi} olarak ayarlandı."
+    )
+
+async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global cekilis_aktif, cekilis_kazananlar
+
+    if not await is_admin(update, context):
+        return
+
+    cekilis_aktif = False
+
+    if not cekilis_katilimcilar:
+        await update.message.reply_text("Katılım olmadığı için çekiliş iptal edildi.")
+        return
+
+    cekilis_kazananlar = random.sample(
+        list(cekilis_katilimcilar),
+        min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
+    )
+
+    msg = "🏆 <b>ÇEKİLİŞ KAZANANLARI</b>\n\n"
+
+    for uid in cekilis_kazananlar:
+        msg += f"🎁 <a href='tg://user?id={uid}'>Kazanan</a>\n"
+
+    await update.message.reply_text(msg, parse_mode="HTML")
+
+async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    if not cekilis_kazananlar:
+        await update.message.reply_text("Henüz kazanan yok.")
+        return
+
+    msg = "📋 <b>KAZANAN KONTROL</b>\n\n"
+
+    for uid in cekilis_kazananlar:
+        eksik = []
+        for kanal in ZORUNLU_KANALLAR:
+            try:
+                m = await context.bot.get_chat_member(kanal, uid)
+                if m.status not in ["member", "administrator", "creator"]:
+                    eksik.append(kanal)
+            except:
+                eksik.append(kanal)
+
+        msg += f"👤 <a href='tg://user?id={uid}'>Kullanıcı</a>\n"
+        msg += "✅ Tüm kanallar tamam\n\n" if not eksik else "❌ Eksik kanallar:\n" + "\n".join(eksik) + "\n\n"
+
+    await update.message.reply_text(msg, parse_mode="HTML")
+
+
 
 # ================= BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
@@ -282,7 +407,10 @@ app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
 app.add_handler(CommandHandler("cekilis", cekilis))
-app.add_handler(CallbackQueryHandler(cekilis_buton))
+app.add_handler(CommandHandler("sayi", sayi))
+app.add_handler(CommandHandler("bitir", bitir))
+app.add_handler(CommandHandler("kontrol", kontrol))
+app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilise_katil$"))
 app.add_handler(MessageHandler(tg_filters.Regex(r"^!sil \d+$"), sil))
 
 app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, kufur_kontrol), group=0)
