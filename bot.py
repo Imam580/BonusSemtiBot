@@ -405,11 +405,9 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_chat.id,
             photo=photo,
             caption=(
-                "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
+               "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
                 "🔥 <b>KATILIMCI SAYISI :</b> 0\n\n"
-                "🏆 <b>Katılım şartları:</b>\n"
-                "• Kanallara katılım\n"
-                "• Minimum mesaj şartı\n\n"
+                "🏆 <b>Katılımcıların kanallarımızı ve botumuzu takip etmesi zorunludur!</b>\n\n"
                 "🔥 https://t.me/Canli_Izleme_Mac_Linkleri\n"
                 "🔥 https://t.me/plasespor\n"
                 "🔥 https://t.me/bonussemti\n"
