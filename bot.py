@@ -320,9 +320,22 @@ async def delete_messages_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message and update.message.text:
         text = update.message.text.lower()
+
         for key, value in filters_dict.items():
             if key in text:
-                await update.message.reply_text(value)
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        f"🔗 {key.upper()} GİRİŞ İÇİN TIKLA",
+                        url=f"https://{value}"
+                    )]
+                ])
+
+                await update.message.reply_text(
+                    f"✅ <b>{key.upper()} için giriş linki</b>",
+                    reply_markup=keyboard,
+                    parse_mode="HTML"
+                )
+                return
 # -------- ÇEKİLİŞ BAŞLAT --------
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_katilimcilar
