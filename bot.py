@@ -33,12 +33,28 @@ async def show_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-# ================== ÇEKİLİŞ GLOBAL ==================
+# ================== ÇEKİLİŞ & KONTROL GLOBAL ==================
 
 cekilis_aktif = False
 cekilis_katilimcilar = set()
 cekilis_kazanan_sayisi = 1
-cekilis_mesaj_id = None
+cekilis_kazananlar = []
+
+# ===== MESAJ SAYACI =====
+kullanici_mesaj_sayisi = {}
+min_mesaj_sayisi = 0
+
+# ===== ZORUNLU KANALLAR =====
+ZORUNLU_KANALLAR = [
+    "@Canli_Izleme_Mac_Linkleri",
+    "@plasespor",
+    "@bonussemti",
+    "@bonussemtietkinlik",
+    "@hergunikioran",
+    "@BahisKarhanesi",
+    "@ozel_oran_2024"
+]
+
 
 
 load_dotenv()
@@ -347,16 +363,27 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     parse_mode="HTML"
                 )
                 return
-# ================== ÇEKİLİŞ GLOBAL ==================
+
+
+# ================== ÇEKİLİŞ & KONTROL GLOBAL ==================
+
 cekilis_aktif = False
 cekilis_katilimcilar = set()
 cekilis_kazanan_sayisi = 1
+cekilis_kazananlar = []
 
+kullanici_mesaj_sayisi = {}
+min_mesaj_sayisi = 0
 
-# ================== ÇEKİLİŞ GLOBAL ==================
-cekilis_aktif = False
-cekilis_katilimcilar = set()
-cekilis_kazanan_sayisi = 1
+ZORUNLU_KANALLAR = [
+    "@Canli_Izleme_Mac_Linkleri",
+    "@plasespor",
+    "@bonussemti",
+    "@bonussemtietkinlik",
+    "@hergunikioran",
+    "@BahisKarhanesi",
+    "@ozel_oran_2024"
+]
 
 
 # -------- ÇEKİLİŞ BAŞLAT --------
@@ -438,25 +465,55 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
         caption=(
             "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
             f"🔥 <b>KATILIMCI SAYISI :</b> {len(cekilis_katilimcilar)}\n\n"
-            "🏆 <b>Katılımcıların kanallarımızı ve botumuzu takip etmesi zorunludur, "
-            "aksi halde ödülden faydalanamazlar!</b>\n\n"
-            "🔥 https://t.me/Canli_Izleme_Mac_Linkleri\n"
-            "🔥 https://t.me/plasespor\n"
-            "🔥 https://t.me/bonussemti\n"
-            "🔥 https://t.me/bonussemtietkinlik\n"
-            "🔥 https://t.me/hergunikioran\n"
-            "🔥 https://t.me/BahisKarhanesi\n"
-            "🔥 https://t.me/ozel_oran_2024\n"
-            "🔥 https://t.me/bonussemtii_bot"
+            "🏆 <b>Katılımcıların kanallarımızı ve botumuzu takip etmesi zorunludur!</b>"
         ),
         reply_markup=keyboard,
         parse_mode="HTML"
     )
 
 
-# -------- ÇEKİLİŞ BİTİR --------
+# -------- MESAJ SAY --------
+async def mesaj_say(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.from_user:
+        return
+
+    uid = update.message.from_user.id
+    kullanici_mesaj_sayisi[uid] = kullanici_mesaj_sayisi.get(uid, 0) + 1
+
+
+# -------- /mesaj --------
+async def mesaj(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global min_mesaj_sayisi
+
+    if not await is_admin(update, context):
+        return
+
+    if not context.args or not context.args[0].isdigit():
+        await update.message.reply_text("Kullanım: /mesaj 200")
+        return
+
+    min_mesaj_sayisi = int(context.args[0])
+    await update.message.reply_text(f"✅ Minimum mesaj şartı: {min_mesaj_sayisi}")
+
+
+# -------- KANAL KONTROL (DETAYLI) --------
+async def kanallari_kontrol_et_detayli(user_id, context):
+    eksik_kanallar = []
+
+    for kanal in ZORUNLU_KANALLAR:
+        try:
+            uye = await context.bot.get_chat_member(kanal, user_id)
+            if uye.status not in ["member", "administrator", "creator"]:
+                eksik_kanallar.append(kanal)
+        except:
+            eksik_kanallar.append(kanal)
+
+    return eksik_kanallar
+
+
+# -------- ÇEKİLİŞ BİTİR (SADECE RANDOM) --------
 async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global cekilis_aktif
+    global cekilis_aktif, cekilis_kazananlar
 
     if not await is_admin(update, context):
         return
@@ -467,25 +524,45 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Kimse katılmadı")
         return
 
-    kazananlar = random.sample(
+    cekilis_kazananlar = random.sample(
         list(cekilis_katilimcilar),
         min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
     )
 
-    msg = "🏆 <b>KAZANANLAR</b>\n\n"
-
-    for uid in kazananlar:
-        member = await context.bot.get_chat_member(update.effective_chat.id, uid)
-        user = member.user
-
-        if user.username:
-            msg += f"🎁 @{user.username}\n"
-        else:
-            msg += f"🎁 <a href='tg://user?id={user.id}'>{user.first_name}</a>\n"
-
-    msg += f"\n👥 Toplam Katılan: <b>{len(cekilis_katilimcilar)}</b>"
+    msg = "🏆 <b>RANDOM KAZANANLAR</b>\n\n"
+    for uid in cekilis_kazananlar:
+        msg += f"🎁 <a href='tg://user?id={uid}'>Kazanan</a>\n"
 
     await update.message.reply_text(msg, parse_mode="HTML")
+
+
+# -------- /kontrol --------
+async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    if not cekilis_kazananlar:
+        await update.message.reply_text("Kontrol edilecek kazanan yok")
+        return
+
+    msg = "📋 <b>KAZANAN KONTROL RAPORU</b>\n\n"
+
+    for uid in cekilis_kazananlar:
+        mesaj_sayi = kullanici_mesaj_sayisi.get(uid, 0)
+        eksik_kanallar = await kanallari_kontrol_et_detayli(uid, context)
+
+        if mesaj_sayi >= min_mesaj_sayisi and not eksik_kanallar:
+            msg += f"✅ <a href='tg://user?id={uid}'>UYGUN</a> | {mesaj_sayi} mesaj\n"
+        else:
+            msg += f"❌ <a href='tg://user?id={uid}'>ELENDİ</a> | {mesaj_sayi} mesaj\n"
+            if mesaj_sayi < min_mesaj_sayisi:
+                msg += f"   ⛔ Mesaj yetersiz (min {min_mesaj_sayisi})\n"
+            if eksik_kanallar:
+                msg += "   ⛔ Eksik kanallar:\n"
+                for kanal in eksik_kanallar:
+                    msg += f"      • {kanal}\n"
+    await update.message.reply_text(msg, parse_mode="HTML")
+
 
 
 
@@ -508,8 +585,15 @@ app.add_handler(CommandHandler("unmute", unmute))
 # === ÇEKİLİŞ HANDLERLARI ===
 app.add_handler(CommandHandler("cekilis", cekilis))
 app.add_handler(CommandHandler("sayi", sayi))
+app.add_handler(CommandHandler("mesaj", mesaj))
 app.add_handler(CommandHandler("bitir", bitir))
+app.add_handler(CommandHandler("kontrol", kontrol))
 app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilise_katil$"))
+
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, mesaj_say),
+    group=0
+)
 
 # === !sil KOMUTU ===
 app.add_handler(
