@@ -40,6 +40,27 @@ ZORUNLU_KANALLAR = [
     "@BahisKarhanesi",
     "@ozel_oran_2024",
 ]
+# ================== KÜFÜR / SPAM / LİNK ==================
+
+KUFUR_LISTESI = [
+    "amk","aq","amq",
+    "orospu","orospuçocuğu","orospu çocuğu",
+    "piç","ibne",
+    "yarrak","yarak",
+    "sik","sikerim","siktir","sikeyim",
+    "amcık","amcik",
+    "anan","ananı","amina","amına",
+    "götveren","gavat",
+    "pezevenk","puşt"
+]
+
+kullanici_kufur_sayisi = {}
+
+SPAM_SURE = 5      # saniye
+SPAM_LIMIT = 5
+kullanici_spam = {}
+kullanici_spam_uyari = {}
+
 
 # --- Tüm filtreler ve linkler ---
 filters_dict = {
@@ -207,6 +228,50 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filters_dict[site_ismi] = site_linki
     await update.message.reply_text(f"✅ Filtre eklendi: {site_ismi} → {site_linki}")
 
+   # --- Küfür engeli ---
+async def kufur_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    if await is_admin(update, context):
+        return
+
+    text = update.message.text.lower()
+    user = update.message.from_user
+    user_id = user.id
+
+    for kufur in KUFUR_LISTESI:
+        if kufur in text:
+            try:
+                await update.message.delete()
+            except:
+                pass
+
+            kullanici_kufur_sayisi[user_id] = kullanici_kufur_sayisi.get(user_id, 0) + 1
+
+            if kullanici_kufur_sayisi[user_id] == 1:
+                sure = 5 * 60
+                mesaj = "Küfürlü mesaj nedeniyle 5 dakika susturuldunuz."
+            else:
+                sure = 60 * 60
+                mesaj = "Tekrar küfür edildiği için 1 saat susturuldunuz."
+
+            try:
+                await context.bot.restrict_chat_member(
+                    chat_id=update.effective_chat.id,
+                    user_id=user_id,
+                    permissions=ChatPermissions(can_send_messages=False),
+                    until_date=int(time.time()) + sure
+                )
+
+                await update.effective_chat.send_message(
+                    f"🔇 @{user.username or user.first_name}\n{mesaj}"
+                )
+            except:
+                pass
+            return
+
+
 # --- /filtre komutu ---
 async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
@@ -231,6 +296,37 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
 
+
+# --- Link engeli ---
+async def link_engel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    if await is_admin(update, context):
+        return
+
+    text = update.message.text.lower()
+    user = update.message.from_user
+
+    if "http://" in text or "https://" in text or "t.me/" in text or "www." in text:
+        try:
+            await update.message.delete()
+
+            await context.bot.restrict_chat_member(
+                chat_id=update.effective_chat.id,
+                user_id=user.id,
+                permissions=ChatPermissions(can_send_messages=False),
+                until_date=int(time.time()) + 3600
+            )
+
+            await update.effective_chat.send_message(
+                f"🔇 @{user.username or user.first_name}\n"
+                "Link paylaşımı yasak olduğu için 1 saat susturuldunuz."
+            )
+        except:
+            pass
+
+
 # --- /remove filters ---
 async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
@@ -245,6 +341,60 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"✅ {site_ismi} filtresi kaldırıldı!")
     else:
         await update.message.reply_text(f"❌ {site_ismi} filtresi bulunamadı!")
+
+
+# --- Spam engeli ---
+async def spam_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+
+    if await is_admin(update, context):
+        return
+
+    user = update.message.from_user
+    user_id = user.id
+    now = time.time()
+
+    if user_id not in kullanici_spam:
+        kullanici_spam[user_id] = []
+
+    kullanici_spam[user_id].append(now)
+    kullanici_spam[user_id] = [
+        t for t in kullanici_spam[user_id]
+        if now - t <= SPAM_SURE
+    ]
+
+    if len(kullanici_spam[user_id]) >= SPAM_LIMIT:
+        try:
+            await update.message.delete()
+        except:
+            pass
+
+        if not kullanici_spam_uyari.get(user_id):
+            kullanici_spam_uyari[user_id] = True
+            await update.effective_chat.send_message(
+                f"⚠️ @{user.username or user.first_name}\n"
+                "Çok hızlı mesaj atıyorsunuz, lütfen yavaşlayın."
+            )
+        else:
+            try:
+                await context.bot.restrict_chat_member(
+                    chat_id=update.effective_chat.id,
+                    user_id=user_id,
+                    permissions=ChatPermissions(can_send_messages=False),
+                    until_date=int(time.time()) + 3600
+                )
+
+                await update.effective_chat.send_message(
+                    f"🔇 @{user.username or user.first_name}\n"
+                    "Spam nedeniyle 1 saat susturuldunuz."
+                )
+            except:
+                pass
+
+            kullanici_spam[user_id] = []
+            kullanici_spam_uyari[user_id] = False
+
 
 # --- /lock ve /unlock ---
 async def lock_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -581,6 +731,21 @@ app.add_handler(CommandHandler("mesaj", mesaj))
 app.add_handler(CommandHandler("bitir", bitir))
 app.add_handler(CommandHandler("kontrol", kontrol))
 app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilise_katil$"))
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, kufur_kontrol),
+    group=1
+)
+
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, link_engel),
+    group=2
+)
+
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, spam_kontrol),
+    group=3
+)
+
 
 app.add_handler(
     MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, mesaj_say),
