@@ -494,48 +494,122 @@ async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= LOCK / UNLOCK =================
 async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await is_admin(update, context):
-        await context.bot.set_chat_permissions(update.effective_chat.id, ChatPermissions())
-        await update.message.reply_text("🔒 Grup kilitlendi")
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Yetkin yok")
+        return
 
-async def unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await is_admin(update, context):
+    try:
         await context.bot.set_chat_permissions(
             update.effective_chat.id,
-            ChatPermissions(can_send_messages=True)
+            ChatPermissions(can_send_messages=False)
+        )
+        await update.message.reply_text("🔒 Grup kilitlendi")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Lock başarısız: {e}")
+
+
+async def unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Yetkin yok")
+        return
+
+    try:
+        await context.bot.set_chat_permissions(
+            update.effective_chat.id,
+            ChatPermissions(
+                can_send_messages=True,
+                can_send_media_messages=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True
+            )
         )
         await update.message.reply_text("🔓 Grup açıldı")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Unlock başarısız: {e}")
+
 
 # ================= BAN / MUTE =================
 async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await is_admin(update, context) and update.message.reply_to_message:
-        await context.bot.ban_chat_member(
-            update.effective_chat.id,
-            update.message.reply_to_message.from_user.id
-        )
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Yetkin yok")
+        return
 
+    if not update.message.reply_to_message:
+        await update.message.reply_text("❌ Ban için bir mesajı yanıtla")
+        return
+
+    user_id = update.message.reply_to_message.from_user.id
+
+    try:
+        await context.bot.ban_chat_member(update.effective_chat.id, user_id)
+        await update.message.reply_text("🔨 Kullanıcı banlandı")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ban başarısız: {e}")
 async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await is_admin(update, context) and context.args:
-        await context.bot.unban_chat_member(
-            update.effective_chat.id,
-            int(context.args[0])
-        )
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Yetkin yok")
+        return
+
+    if not context.args or not context.args[0].isdigit():
+        await update.message.reply_text("❌ Kullanım: /unban user_id")
+        return
+
+    user_id = int(context.args[0])
+
+    try:
+        await context.bot.unban_chat_member(update.effective_chat.id, user_id)
+        await update.message.reply_text("✅ Kullanıcının banı kaldırıldı")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Unban başarısız: {e}")
+
+
 
 async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await is_admin(update, context) and update.message.reply_to_message:
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Yetkin yok")
+        return
+
+    if not update.message.reply_to_message:
+        await update.message.reply_text("❌ Mute için mesajı yanıtla")
+        return
+
+    user_id = update.message.reply_to_message.from_user.id
+
+    try:
         await context.bot.restrict_chat_member(
             update.effective_chat.id,
-            update.message.reply_to_message.from_user.id,
+            user_id,
             ChatPermissions(can_send_messages=False)
         )
-
+        await update.message.reply_text("🔇 Kullanıcı susturuldu")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Mute başarısız: {e}")
 async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await is_admin(update, context) and update.message.reply_to_message:
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Yetkin yok")
+        return
+
+    if not update.message.reply_to_message:
+        await update.message.reply_text("❌ Unmute için mesajı yanıtla")
+        return
+
+    user_id = update.message.reply_to_message.from_user.id
+
+    try:
         await context.bot.restrict_chat_member(
             update.effective_chat.id,
-            update.message.reply_to_message.from_user.id,
-            ChatPermissions(can_send_messages=True)
+            user_id,
+            ChatPermissions(
+                can_send_messages=True,
+                can_send_media_messages=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True
+            )
         )
+        await update.message.reply_text("🔊 Kullanıcı tekrar konuşabilir")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Unmute başarısız: {e}")
+
 
 # ================= ÇEKİLİŞ =================
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -568,12 +642,12 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ================= BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
 
-app.add_handler(CommandHandler("lock", lock))
-app.add_handler(CommandHandler("unlock", unlock))
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
+app.add_handler(CommandHandler("lock", lock))
+app.add_handler(CommandHandler("unlock", unlock))
 app.add_handler(CommandHandler("cekilis", cekilis))
 app.add_handler(CallbackQueryHandler(cekilis_buton))
 
