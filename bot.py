@@ -330,29 +330,6 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
 
-    if "doğum" not in update.message.text.lower():
-        return
-
-    keyboard = []
-    satir = []
-
-    for i, (isim, link) in enumerate(DOGUM_BONUS_BUTONLARI, start=1):
-        satir.append(InlineKeyboardButton(isim, url=link))
-
-        # her satıra 2 buton
-        if i % 2 == 0:
-            keyboard.append(satir)
-            satir = []
-
-    if satir:
-        keyboard.append(satir)
-
-    await update.message.reply_text(
-        "🎁 **DOĞUM GÜNÜ BONUSLARI**\n\n"
-        "Aşağıdan siteyi seçerek doğrudan giriş yapabilirsiniz:",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="Markdown"
-    )
 
    # ================== EVERY KONTROL ==================
 async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
