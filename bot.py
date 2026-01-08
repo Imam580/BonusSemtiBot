@@ -320,9 +320,18 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(f"❌ {site_ismi} filtresi bulunamadı!")
 
-      if not filters_dict:
+     async def show_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Sadece yönetici kullanabilir!")
+        return
+
+    if not filters_dict:
         await update.message.reply_text("❌ Filtre yok!")
         return
+
+    msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
+    await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
+
 
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
