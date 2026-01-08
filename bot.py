@@ -335,7 +335,7 @@ async def cekilis_katilim(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- Bot başlat ---
 app = ApplicationBuilder().token(TOKEN).build()
 
-# --- Handlerlar ---
+# --- ADMIN KOMUTLARI ---
 app.add_handler(CommandHandler("filter", add_filter))
 app.add_handler(CommandHandler("filtre", show_filters))
 app.add_handler(CommandHandler("remove", remove_filter))
@@ -345,12 +345,30 @@ app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
-app.add_handler(MessageHandler(tg_filters.TEXT & tg_filters.Regex(r"^!sil \d+$"), delete_messages_cmd))
-app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message))
-app.add_handler(CommandHandler("cekilis", cekilis))
-app.add_handler(CommandHandler("sayi", sayi))
-app.add_handler(CommandHandler("bitir", bitir))
-app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, cekilis_katilim))
+
+# --- MESAJ SİL ---
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & tg_filters.Regex(r"^!sil \d+$"), delete_messages_cmd),
+    group=0
+)
+
+# === ÇEKİLİŞ KOMUTLARI ===
+app.add_handler(CommandHandler("cekilis", cekilis), group=1)
+app.add_handler(CommandHandler("sayi", sayi), group=1)
+app.add_handler(CommandHandler("bitir", bitir), group=1)
+
+# === ÇEKİLİŞE KATILIM (ÜYELERİN YAZDIĞI MESAJLAR) ===
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, cekilis_katilim),
+    group=2
+)
+
+# === LİNK FİLTRE (EN SON ÇALIŞACAK) ===
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message),
+    group=3
+)
+
 
 if __name__ == "__main__":
     app.run_polling()
