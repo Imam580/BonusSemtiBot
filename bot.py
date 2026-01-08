@@ -347,6 +347,12 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     parse_mode="HTML"
                 )
                 return
+# ================== ÇEKİLİŞ GLOBAL ==================
+cekilis_aktif = False
+cekilis_katilimcilar = set()
+cekilis_kazanan_sayisi = 1
+
+
 # -------- ÇEKİLİŞ BAŞLAT --------
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_katilimcilar
@@ -366,9 +372,18 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_chat.id,
             photo=photo,
             caption=(
-                "🎁 <b>BONUS SEMTİ ÇEKİLİŞİ</b>\n\n"
-                "👇 Katılmak için butona bas\n\n"
-                "👥 Katılan: <b>0</b>"
+                "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
+                "🔥 <b>KATILIMCI SAYISI :</b> 0\n"
+                "🔥 https://t.me/bonussemtii_bot\n\n"
+                "🏆 <b>Katılımcıların kanallarımızı ve botumuzu takip etmesi zorunludur, "
+                "aksi halde ödülden faydalanamazlar!</b>\n\n"
+                "🔥 https://t.me/Canli_Izleme_Mac_Linkleri\n"
+                "🔥 https://t.me/plasespor\n"
+                "🔥 https://t.me/bonussemti\n"
+                "🔥 https://t.me/bonussemtietkinlik\n"
+                "🔥 https://t.me/hergunikioran\n"
+                "🔥 https://t.me/BahisKarhanesi\n"
+                "🔥 https://t.me/ozel_oran_2024"
             ),
             reply_markup=keyboard,
             parse_mode="HTML"
@@ -415,15 +430,22 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.edit_message_caption(
         caption=(
-            "🎁 <b>BONUS SEMTİ ÇEKİLİŞİ</b>\n\n"
-            "👇 Katılmak için butona bas\n\n"
-            f"👥 Katılan: <b>{len(cekilis_katilimcilar)}</b>"
+            "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
+            f"🔥 <b>KATILIMCI SAYISI :</b> {len(cekilis_katilimcilar)}\n"
+            "🔥 https://t.me/bonussemtii_bot\n\n"
+            "🏆 <b>Katılımcıların kanallarımızı ve botumuzu takip etmesi zorunludur, "
+            "aksi halde ödülden faydalanamazlar!</b>\n\n"
+            "🔥 https://t.me/Canli_Izleme_Mac_Linkleri\n"
+            "🔥 https://t.me/plasespor\n"
+            "🔥 https://t.me/bonussemti\n"
+            "🔥 https://t.me/bonussemtietkinlik\n"
+            "🔥 https://t.me/hergunikioran\n"
+            "🔥 https://t.me/BahisKarhanesi\n"
+            "🔥 https://t.me/ozel_oran_2024"
         ),
         reply_markup=keyboard,
         parse_mode="HTML"
     )
-
-    await query.answer("✅ Çekilişe katıldın!", show_alert=True)
 
 
 # -------- ÇEKİLİŞ BİTİR --------
@@ -458,6 +480,7 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += f"\n👥 Toplam Katılan: <b>{len(cekilis_katilimcilar)}</b>"
 
     await update.message.reply_text(msg, parse_mode="HTML")
+
 
 
 
