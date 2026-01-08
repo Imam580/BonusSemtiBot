@@ -22,11 +22,12 @@ from telegram.ext import (
 )
 
 
+# ================== ÇEKİLİŞ GLOBAL ==================
+
 cekilis_aktif = False
-cekilis_katilimcilar = []
+cekilis_katilimcilar = set()
 cekilis_kazanan_sayisi = 1
 cekilis_mesaj_id = None
-cekilis_chat_id = None
 
 
 load_dotenv()
@@ -309,15 +310,7 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for key, value in filters_dict.items():
             if key in text:
                 await update.message.reply_text(value)
-# ================== ÇEKİLİŞ SİSTEMİ (BUTONLU + @ ETİKETLİ) ==================
-
-from telegram.helpers import mention_html
-
-cekilis_aktif = False
-cekilis_katilimcilar = {}   # {user_id: username}
-cekilis_kazanan_sayisi = 1
-
-
+# -------- ÇEKİLİŞ BAŞLAT --------
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_katilimcilar
 
@@ -333,19 +326,21 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "🎉 <b>ÇEKİLİŞ BAŞLADI!</b>\n\n"
-        "Katılmak için aşağıdaki butona bas 👇",
+        "👇 Katılmak için butona bas\n\n"
+        "👥 Katılan: <b>0</b>",
         reply_markup=keyboard,
         parse_mode="HTML"
     )
 
 
+# -------- KAZANAN SAYISI --------
 async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_kazanan_sayisi
 
     if not await is_admin(update, context):
         return
 
-    if not context.args:
+    if not context.args or not context.args[0].isdigit():
         await update.message.reply_text("❌ Kullanım: /sayi 3")
         return
 
@@ -353,8 +348,9 @@ async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ {cekilis_kazanan_sayisi} kazanan seçilecek")
 
 
+# -------- BUTON KATILIM --------
 async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global cekilis_aktif, cekilis_katilimcilar
+    global cekilis_katilimcilar
 
     query = update.callback_query
     await query.answer()
@@ -369,10 +365,24 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer("⚠️ Zaten katıldın!", show_alert=True)
         return
 
-    cekilis_katilimcilar[user.id] = user.username
-    await query.answer("✅ Çekilişe katıldın! Bol şans 🍀", show_alert=True)
+    cekilis_katilimcilar.add(user.id)
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="cekilise_katil")]
+    ])
+
+    await query.edit_message_text(
+        f"🎉 <b>ÇEKİLİŞ BAŞLADI!</b>\n\n"
+        f"👇 Katılmak için butona bas\n\n"
+        f"👥 Katılan: <b>{len(cekilis_katilimcilar)}</b>",
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+
+    await query.answer("✅ Çekilişe katıldın!", show_alert=True)
 
 
+# -------- ÇEKİLİŞ BİTİR --------
 async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif
 
@@ -386,9 +396,24 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     kazananlar = random.sample(
-        list(cekilis_katilimcilar.items()),
+        list(cekilis_katilimcilar),
         min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
     )
+
+    msg = "🏆 <b>KAZANANLAR</b>\n\n"
+
+    for uid in kazananlar:
+        member = await context.bot.get_chat_member(update.effective_chat.id, uid)
+        user = member.user
+
+        if user.username:
+            msg += f"🎁 @{user.username}\n"
+        else:
+            msg += f"🎁 <a href='tg://user?id={user.id}'>{user.first_name}</a>\n"
+
+    msg += f"\n👥 Toplam Katılan: <b>{len(cekilis_katilimcilar)}</b>"
+
+    await update.message.reply_text(msg, parse_mode="HTML")
 
     msg = "🏆 <b>KAZANANLAR</b>\n\n"
 
