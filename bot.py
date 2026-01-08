@@ -1,9 +1,24 @@
 import os
 import random
 from dotenv import load_dotenv
-from telegram import Update, ChatPermissions
+
+from telegram import (
+    Update,
+    ChatPermissions,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup
+)
+
 from telegram.constants import ChatMemberStatus
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters as tg_filters
+
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters as tg_filters
+)
 
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
@@ -286,29 +301,56 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if key in text:
                 await update.message.reply_text(value)
 # ================== ÇEKİLİŞ SİSTEMİ ==================
+# ================== ÇEKİLİŞ SİSTEMİ (BUTONLU) ==================
 cekilis_aktif = False
 cekilis_katilimcilar = set()
 cekilis_kazanan_sayisi = 1
+
 
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_katilimcilar
     if not await is_admin(update, context):
         return
+
     cekilis_aktif = True
     cekilis_katilimcilar.clear()
-    await update.message.reply_text("🎉 ÇEKİLİŞ BAŞLADI!\nKatılmak için mesaj atmanız yeterli.")
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 Çekilişe Katıl", callback_data="cekilis_katil")]
+    ])
+
+    await update.message.reply_text(
+        "🎁 ÇEKİLİŞ BAŞLADI!\n\nKatılmak için aşağıdaki butona bas 👇",
+        reply_markup=keyboard
+    )
+
+
+async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if not cekilis_aktif:
+        await query.reply_text("❌ Çekiliş aktif değil")
+        return
+
+    cekilis_katilimcilar.add(query.from_user.id)
+    await query.reply_text("✅ Çekilişe katıldın!")
+
 
 async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_kazanan_sayisi
     if not await is_admin(update, context):
         return
+
     cekilis_kazanan_sayisi = int(context.args[0])
-    await update.message.reply_text(f"✅ {cekilis_kazanan_sayisi} kazanan seçilecek")
+    await update.message.reply_text(f"🎯 {cekilis_kazanan_sayisi} kazanan seçilecek")
+
 
 async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif
     if not await is_admin(update, context):
         return
+
     cekilis_aktif = False
 
     if not cekilis_katilimcilar:
@@ -326,10 +368,8 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
-async def cekilis_katilim(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global cekilis_aktif
-    if cekilis_aktif and update.message:
-        cekilis_katilimcilar.add(update.message.from_user.id)
+
+
 
 
 # --- Bot başlat ---
@@ -350,18 +390,16 @@ app.add_handler(CommandHandler("unmute", unmute))
 app.add_handler(
     MessageHandler(tg_filters.TEXT & tg_filters.Regex(r"^!sil \d+$"), delete_messages_cmd),
     group=0
-)
-
-# === ÇEKİLİŞ KOMUTLARI ===
+# === ÇEKİLİŞ KOMUTLARI (ADMIN) ===
 app.add_handler(CommandHandler("cekilis", cekilis), group=1)
 app.add_handler(CommandHandler("sayi", sayi), group=1)
 app.add_handler(CommandHandler("bitir", bitir), group=1)
 
-# === ÇEKİLİŞE KATILIM (ÜYELERİN YAZDIĞI MESAJLAR) ===
+# === ÇEKİLİŞE KATILIM (BUTON) ===
 app.add_handler(
-    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, cekilis_katilim),
-    group=2
+    CallbackQueryHandler(cekilis_buton, pattern="^cekilis_katil$")
 )
+
 
 # === LİNK FİLTRE (EN SON ÇALIŞACAK) ===
 app.add_handler(
