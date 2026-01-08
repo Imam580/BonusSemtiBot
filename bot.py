@@ -197,10 +197,23 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Filtre eklendi: {site_ismi} → {site_linki}")
 
 # --- /filtre komutu ---
-async def show_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         await update.message.reply_text("❌ Sadece yönetici kullanabilir!")
         return
+
+    if not context.args:
+        await update.message.reply_text("Kullanım: /remove <site_ismi>")
+        return
+
+    site_ismi = context.args[0].lower()
+
+    if site_ismi in filters_dict:
+        del filters_dict[site_ismi]
+        await update.message.reply_text(f"✅ {site_ismi} filtresi kaldırıldı!")
+    else:
+        await update.message.reply_text(f"❌ {site_ismi} filtresi bulunamadı!")
+
     if not filters_dict:
         await update.message.reply_text("❌ Filtre yok!")
         return
