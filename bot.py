@@ -40,6 +40,36 @@ ZORUNLU_KANALLAR = [
     "@BahisKarhanesi",
     "@ozel_oran_2024",
 ]
+DOGUM_BONUS_BUTONLARI = [
+    ("ZBAHİS", "https://shoort.im/zbahis"),
+    ("PADİŞAHBET", "https://shoort.im/padisahbet"),
+    ("FİXBET", "https://shoort.im/fixbet"),
+    ("BETMATİK", "https://shoort.im/betmatik"),
+    ("BAYSPİN", "http://shoort.im/bayspinn"),
+    ("BETOFFİCE", "https://shoort.im/betoffice"),
+    ("BETİNE", "https://shoort.im/betinee"),
+    ("XSLOT", "https://shoort.im/xslot"),
+    ("STARZBET", "https://shoort.im/starzbet"),
+    ("BETPİPO", "https://shoort.im/betpipo"),
+    ("NORABAHİS", "https://shoort.im/norabahis"),
+    ("SPİNCO", "https://shoort.im/spinco"),
+    ("HERMESBET", "https://hermesbet.wiki/telegram"),
+    ("CRATOSBET", "https://shoort.im/cratosbet"),
+    ("BETKOM", "http://shoort.im/betkom"),
+    ("MASTERBET", "https://shoort.im/masterbetting"),
+    ("MARİOBET", "http://shoort.im/mariobonus"),
+    ("BETWİLD", "http://shoort.im/betwild"),
+    ("PASHAGAMING", "https://shoort.im/pashagaming"),
+    ("ROYALBET", "https://shoort.im/royalbet"),
+    ("RADİSSONBET", "https://shoort.im/radissonbet"),
+    ("JOJOBET", "https://dub.pro/jojoyagit"),
+    ("HOLIGANBET", "http://t.t2m.io/holiguncel"),
+    ("KAVBET", "https://shoort.im/kavbet"),
+    ("BETGİT", "https://shoort.im/betgit"),
+    ("MADRIDBET", "https://shoort.im/madridbet"),
+    ("ARTEMİSBET", "https://shoort.im/artemisbet"),
+]
+
 # ================== KÜFÜR / SPAM / LİNK ==================
 
 KUFUR_LISTESI = [
@@ -295,6 +325,34 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
+
+   async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    if "doğum" not in update.message.text.lower():
+        return
+
+    keyboard = []
+    satir = []
+
+    for i, (isim, link) in enumerate(DOGUM_BONUS_BUTONLARI, start=1):
+        satir.append(InlineKeyboardButton(isim, url=link))
+
+        # her satıra 2 buton
+        if i % 2 == 0:
+            keyboard.append(satir)
+            satir = []
+
+    if satir:
+        keyboard.append(satir)
+
+    await update.message.reply_text(
+        "🎁 **DOĞUM GÜNÜ BONUSLARI**\n\n"
+        "Aşağıdan siteyi seçerek doğrudan giriş yapabilirsiniz:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown"
+    )
 
    # ================== EVERY KONTROL ==================
 async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -783,6 +841,11 @@ app.add_handler(
         every_kontrol
     ),
     group=-1
+)
+
+app.add_handler(
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, dogum_kontrol),
+    group=0
 )
 
 
