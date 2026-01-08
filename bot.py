@@ -20,6 +20,12 @@ from telegram.ext import (
     filters as tg_filters
 )
 
+
+cekilis_aktif = False
+katilanlar = set()
+cekilis_sayi = 0
+
+
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
 
@@ -300,8 +306,8 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for key, value in filters_dict.items():
             if key in text:
                 await update.message.reply_text(value)
-# ================== ÇEKİLİŞ SİSTEMİ ==================
 # ================== ÇEKİLİŞ SİSTEMİ (BUTONLU) ==================
+
 cekilis_aktif = False
 cekilis_katilimcilar = set()
 cekilis_kazanan_sayisi = 1
@@ -309,6 +315,7 @@ cekilis_kazanan_sayisi = 1
 
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_katilimcilar
+
     if not await is_admin(update, context):
         return
 
@@ -316,45 +323,61 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cekilis_katilimcilar.clear()
 
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎉 Çekilişe Katıl", callback_data="cekilis_katil")]
+        [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="cekilise_katil")]
     ])
 
     await update.message.reply_text(
-        "🎁 ÇEKİLİŞ BAŞLADI!\n\nKatılmak için aşağıdaki butona bas 👇",
-        reply_markup=keyboard
+        "🎉 <b>ÇEKİLİŞ BAŞLADI!</b>\n\n"
+        "Katılmak için aşağıdaki butona bas 👇",
+        reply_markup=keyboard,
+        parse_mode="HTML"
     )
-
-
-async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    if not cekilis_aktif:
-        await query.reply_text("❌ Çekiliş aktif değil")
-        return
-
-    cekilis_katilimcilar.add(query.from_user.id)
-    await query.reply_text("✅ Çekilişe katıldın!")
 
 
 async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_kazanan_sayisi
+
     if not await is_admin(update, context):
         return
 
+    if not context.args:
+        await update.message.reply_text("❌ Kullanım: /sayi 3")
+        return
+
     cekilis_kazanan_sayisi = int(context.args[0])
-    await update.message.reply_text(f"🎯 {cekilis_kazanan_sayisi} kazanan seçilecek")
+    await update.message.reply_text(f"✅ {cekilis_kazanan_sayisi} kazanan seçilecek")
+
+
+async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global cekilis_aktif, cekilis_katilimcilar
+
+    query = update.callback_query
+    await query.answer()
+
+    if not cekilis_aktif:
+        await query.reply_text("❌ Çekiliş aktif değil", show_alert=True)
+        return
+
+    user_id = query.from_user.id
+
+    if user_id in cekilis_katilimcilar:
+        await query.reply_text("⚠️ Zaten çekilişe katıldın!", show_alert=True)
+        return
+
+    cekilis_katilimcilar.add(user_id)
+    await query.reply_text("✅ Çekilişe katıldın! Bol şans 🍀", show_alert=True)
 
 
 async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif
+
     if not await is_admin(update, context):
         return
 
     cekilis_aktif = False
 
     if not cekilis_katilimcilar:
-        await update.message.reply_text("❌ Katılım yok")
+        await update.message.reply_text("❌ Kimse katılmadı")
         return
 
     kazananlar = random.sample(
@@ -362,11 +385,12 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
     )
 
-    msg = "🏆 KAZANANLAR:\n"
+    msg = "🏆 <b>KAZANANLAR</b>\n\n"
     for uid in kazananlar:
-        msg += f"👤 <a href='tg://user?id={uid}'>Kazanan</a>\n"
+        msg += f"🎁 <a href='tg://user?id={uid}'>Kazanan</a>\n"
 
     await update.message.reply_text(msg, parse_mode="HTML")
+
 
 
 
@@ -386,13 +410,11 @@ app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
 
-# === ÇEKİLİŞ KOMUTLARI ===
+# === ÇEKİLİŞ HANDLERLARI ===
 app.add_handler(CommandHandler("cekilis", cekilis))
 app.add_handler(CommandHandler("sayi", sayi))
 app.add_handler(CommandHandler("bitir", bitir))
-
-# === ÇEKİLİŞ BUTONU ===
-app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilis_katil$"))
+app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilise_katil$"))
 
 # === !sil KOMUTU ===
 app.add_handler(
