@@ -231,6 +231,25 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
 
+    async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    if not context.args or not context.args[0].isdigit():
+        await update.message.reply_text("Kullanım: !sil 10")
+        return
+
+    adet = int(context.args[0])
+
+    for i in range(adet):
+        try:
+            await context.bot.delete_message(
+                chat_id=update.effective_chat.id,
+                message_id=update.message.message_id - i
+            )
+        except:
+            pass
+
 # --- /remove filters ---
 async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
@@ -511,27 +530,45 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
 
+    if not cekilis_kazananlar:
+        await update.message.reply_text("Kontrol edilecek kazanan bulunmamaktadır.")
+        return
+
     msg = "📋 <b>KAZANAN KONTROL RAPORU</b>\n\n"
 
     for uid in cekilis_kazananlar:
         member = await context.bot.get_chat_member(update.effective_chat.id, uid)
         user = member.user
+
         isim = f"@{user.username}" if user.username else f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
 
         mesaj_sayi = kullanici_mesaj_sayisi.get(uid, 0)
-        eksik = await kanallari_kontrol_et_detayli(uid, context)
+        eksik_kanallar = await kanallari_kontrol_et_detayli(uid, context)
 
-        if mesaj_sayi >= min_mesaj_sayisi and not eksik:
-            msg += f"✅ {isim}\n   🎉 Tüm şartlar sağlanmıştır.\n\n"
+        msg += f"❌ {isim}\n"
+
+        # Mesaj durumu
+        if mesaj_sayi >= min_mesaj_sayisi:
+            msg += (
+                f"   📨 Mesaj durumu: "
+                f"Gerekli mesaj sayısına ulaşılmıştır ({mesaj_sayi}).\n"
+            )
         else:
-            msg += f"❌ {isim}\n"
-            if mesaj_sayi < min_mesaj_sayisi:
-                msg += f"   📨 {mesaj_sayi} mesaj bulunuyor, {min_mesaj_sayisi} gerekli.\n"
-            if eksik:
-                msg += "   📢 Eksik kanallar:\n"
-                for k in eksik:
-                    msg += f"      • {k}\n"
-            msg += "\n"
+            msg += (
+                f"   📨 Mesaj durumu: "
+                f"{mesaj_sayi} mesaj bulunuyor, "
+                f"en az {min_mesaj_sayisi} mesaj gerekmektedir.\n"
+            )
+
+        # Kanal durumu
+        if eksik_kanallar:
+            msg += "   📢 Kanal durumu: Aşağıdaki kanallara katılım eksiktir:\n"
+            for kanal in eksik_kanallar:
+                msg += f"      • {kanal}\n"
+        else:
+            msg += "   📢 Kanal durumu: Tüm kanallara katılım sağlanmıştır.\n"
+
+        msg += "\n"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -553,6 +590,9 @@ app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
+app.add_handler(
+    MessageHandler(tg_filters.Regex(r"^!sil \d+$"), sil)
+)
 
 app.add_handler(CommandHandler("cekilis", cekilis))
 app.add_handler(CommandHandler("sayi", sayi))   # <-- /sayi BURADA
