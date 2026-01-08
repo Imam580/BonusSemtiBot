@@ -320,15 +320,18 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(f"❌ {site_ismi} filtresi bulunamadı!")
 
-    if not filters_dict:
+      if not filters_dict:
         await update.message.reply_text("❌ Filtre yok!")
         return
+
     msg = "\n".join([f"{k} → {v}" for k, v in filters_dict.items()])
     await update.message.reply_text(f"🔹 Filtreler:\n{msg}")
 
-   async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
+
 
 
    # ================== EVERY KONTROL ==================
