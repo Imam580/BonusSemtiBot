@@ -395,10 +395,11 @@ app.add_handler(CommandHandler("cekilis", cekilis), group=1)
 app.add_handler(CommandHandler("sayi", sayi), group=1)
 app.add_handler(CommandHandler("bitir", bitir), group=1)
 
-# === ÇEKİLİŞE KATILIM (BUTON) ===
+# === ÇEKİLİŞE KATILIM (INLINE BUTON) ===
 app.add_handler(
     CallbackQueryHandler(cekilis_buton, pattern="^cekilis_katil$")
 )
+
 
 
 # === LİNK FİLTRE (EN SON ÇALIŞACAK) ===
