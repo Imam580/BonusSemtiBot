@@ -375,7 +375,7 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- Bot başlat ---
 app = ApplicationBuilder().token(TOKEN).build()
 
-# --- ADMIN KOMUTLARI ---
+# === KOMUTLAR ===
 app.add_handler(CommandHandler("filter", add_filter))
 app.add_handler(CommandHandler("filtre", show_filters))
 app.add_handler(CommandHandler("remove", remove_filter))
@@ -386,27 +386,24 @@ app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
 
-# --- MESAJ SİL ---
-app.add_handler(
-    MessageHandler(tg_filters.TEXT & tg_filters.Regex(r"^!sil \d+$"), delete_messages_cmd),
-    group=0
-# === ÇEKİLİŞ KOMUTLARI (ADMIN) ===
-app.add_handler(CommandHandler("cekilis", cekilis), group=1)
-app.add_handler(CommandHandler("sayi", sayi), group=1)
-app.add_handler(CommandHandler("bitir", bitir), group=1)
+# === ÇEKİLİŞ KOMUTLARI ===
+app.add_handler(CommandHandler("cekilis", cekilis))
+app.add_handler(CommandHandler("sayi", sayi))
+app.add_handler(CommandHandler("bitir", bitir))
 
-# === ÇEKİLİŞE KATILIM (INLINE BUTON) ===
+# === ÇEKİLİŞ BUTONU ===
+app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilis_katil$"))
+
+# === !sil KOMUTU ===
 app.add_handler(
-    CallbackQueryHandler(cekilis_buton, pattern="^cekilis_katil$")
+    MessageHandler(tg_filters.TEXT & tg_filters.Regex(r"^!sil \d+$"), delete_messages_cmd)
 )
 
-
-
-# === LİNK FİLTRE (EN SON ÇALIŞACAK) ===
+# === EN SON: NORMAL MESAJLAR ===
 app.add_handler(
-    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message),
-    group=3
+    MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message)
 )
+
 
 
 if __name__ == "__main__":
