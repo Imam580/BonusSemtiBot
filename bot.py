@@ -20,6 +20,17 @@ from telegram.ext import (
     ContextTypes,
     filters as tg_filters
 )
+async def show_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not filters_dict:
+        await update.message.reply_text("Filtre yok")
+        return
+
+    mesaj = "AKTİF LİNKLER:\n\n"
+    for isim, link in filters_dict.items():
+        mesaj += f"{isim} -> {link}\n"
+
+    await update.message.reply_text(mesaj)
+
 
 
 # ================== ÇEKİLİŞ GLOBAL ==================
@@ -458,7 +469,6 @@ app = ApplicationBuilder().token(TOKEN).build()
 
 # === KOMUTLAR ===
 app.add_handler(CommandHandler("filter", add_filter))
-app.add_handler(CommandHandler("filtre", show_filters))
 app.add_handler(CommandHandler("remove", remove_filter))
 app.add_handler(CommandHandler("lock", lock_channel))
 app.add_handler(CommandHandler("unlock", unlock_channel))
