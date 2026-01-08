@@ -593,6 +593,30 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     parse_mode="HTML"
                 )
                 return
+async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    if "doğum" not in update.message.text.lower():
+        return
+
+    keyboard = []
+    satir = []
+
+    for i, (isim, link) in enumerate(DOGUM_BONUS_BUTONLARI, start=1):
+        satir.append(InlineKeyboardButton(isim, url=link))
+        if i % 2 == 0:
+            keyboard.append(satir)
+            satir = []
+
+    if satir:
+        keyboard.append(satir)
+
+    await update.message.reply_text(
+        "🎁 DOĞUM GÜNÜ BONUSLARI\n\nAşağıdan siteyi seçebilirsiniz:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
 
 
 # ================== /cekilis ==================
