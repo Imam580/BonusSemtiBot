@@ -55,7 +55,6 @@ ZORUNLU_KANALLAR = [
     "@hergunikioran",
     "@BahisKarhanesi",
     "@ozel_oran_2024",
-    "@bonussemtii_bot"
 ]
 
 
@@ -439,6 +438,21 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ),
         reply_markup=keyboard,
         parse_mode="HTML"
+    )
+    # ================== /sayi ==================
+async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global cekilis_kazanan_sayisi
+
+    if not await is_admin(update, context):
+        return
+
+    if not context.args or not context.args[0].isdigit():
+        await update.message.reply_text("Kullanım: /sayi 3")
+        return
+
+    cekilis_kazanan_sayisi = int(context.args[0])
+    await update.message.reply_text(
+        f"✅ Kazanan sayısı {cekilis_kazanan_sayisi} olarak ayarlandı."
     )
 
 # ================== MESAJ SAY ==================
