@@ -1,38 +1,13 @@
-import os
 import random
 import time
-from dotenv import load_dotenv
-from telegram.helpers import mention_html
-
-from telegram import (
-    Update,
-    ChatPermissions,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup
-)
-
-from telegram.constants import ChatMemberStatus
-
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    ApplicationBuilder,
     CommandHandler,
     MessageHandler,
     CallbackQueryHandler,
     ContextTypes,
     filters as tg_filters
 )
-async def show_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not filters_dict:
-        await update.message.reply_text("Filtre yok")
-        return
-
-    mesaj = "AKTİF LİNKLER:\n\n"
-    for isim, link in filters_dict.items():
-        mesaj += f"{isim} -> {link}\n"
-
-    await update.message.reply_text(mesaj)
-
-
 
 # ================== GLOBAL ==================
 
@@ -41,7 +16,6 @@ cekilis_katilimcilar = set()
 cekilis_kazanan_sayisi = 1
 cekilis_kazananlar = []
 
-# Bot gruba eklendiği an
 BOT_BASLANGIC_ZAMANI = time.time()
 
 kullanici_mesaj_sayisi = {}
@@ -367,7 +341,7 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
 
 
-# ================== ÇEKİLİŞ BAŞLAT ==================
+# ================== /cekilis ==================
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_katilimcilar
 
@@ -439,7 +413,8 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
         parse_mode="HTML"
     )
-    # ================== /sayi ==================
+
+# ================== /sayi ==================
 async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_kazanan_sayisi
 
@@ -452,7 +427,7 @@ async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     cekilis_kazanan_sayisi = int(context.args[0])
     await update.message.reply_text(
-        f"✅ Kazanan sayısı {cekilis_kazanan_sayisi} olarak ayarlandı."
+        f"🎯 Kazanan sayısı {cekilis_kazanan_sayisi} olarak ayarlandı."
     )
 
 # ================== MESAJ SAY ==================
@@ -479,7 +454,7 @@ async def mesaj(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     min_mesaj_sayisi = int(context.args[0])
     await update.message.reply_text(
-        f"✅ Minimum mesaj şartı {min_mesaj_sayisi} olarak ayarlanmıştır."
+        f"📝 Minimum mesaj şartı {min_mesaj_sayisi} olarak ayarlandı."
     )
 
 # ================== KANAL KONTROL ==================
@@ -519,20 +494,13 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for uid in cekilis_kazananlar:
         member = await context.bot.get_chat_member(update.effective_chat.id, uid)
         user = member.user
-        if user.username:
-            msg += f"🎁 @{user.username}\n"
-        else:
-            msg += f"🎁 <a href='tg://user?id={user.id}'>{user.first_name}</a>\n"
+        msg += f"🎁 @{user.username}\n" if user.username else f"🎁 <a href='tg://user?id={user.id}'>{user.first_name}</a>\n"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
-# ================== /kontrol (KİBAR) ==================
+# ================== /kontrol ==================
 async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
-        return
-
-    if not cekilis_kazananlar:
-        await update.message.reply_text("Kontrol edilecek kazanan bulunmamaktadır.")
         return
 
     msg = "📋 <b>KAZANAN KONTROL RAPORU</b>\n\n"
@@ -540,36 +508,22 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for uid in cekilis_kazananlar:
         member = await context.bot.get_chat_member(update.effective_chat.id, uid)
         user = member.user
-
         isim = f"@{user.username}" if user.username else f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
 
         mesaj_sayi = kullanici_mesaj_sayisi.get(uid, 0)
-        eksik_kanallar = await kanallari_kontrol_et_detayli(uid, context)
+        eksik = await kanallari_kontrol_et_detayli(uid, context)
 
-        mesaj_yeterli = mesaj_sayi >= min_mesaj_sayisi
-        kanal_tamam = len(eksik_kanallar) == 0
-
-        if mesaj_yeterli and kanal_tamam:
-            msg += f"✅ {isim}\n"
-            msg += "   🎉 Tüm katılım şartları eksiksiz şekilde sağlanmıştır.\n\n"
+        if mesaj_sayi >= min_mesaj_sayisi and not eksik:
+            msg += f"✅ {isim}\n   🎉 Tüm şartlar sağlanmıştır.\n\n"
         else:
             msg += f"❌ {isim}\n"
-
-            if mesaj_yeterli:
-                msg += f"   📨 Mesaj durumu: Gerekli mesaj sayısına ulaşılmıştır ({mesaj_sayi}).\n"
-            else:
-                msg += (
-                    f"   📨 Mesaj durumu: {mesaj_sayi} mesaj bulunuyor, "
-                    f"en az {min_mesaj_sayisi} mesaj gerekmektedir.\n"
-                )
-
-            if kanal_tamam:
-                msg += "   📢 Kanal durumu: Tüm kanallara katılım sağlanmıştır.\n\n"
-            else:
-                msg += "   📢 Kanal durumu: Aşağıdaki kanallara katılım eksiktir:\n"
-                for kanal in eksik_kanallar:
-                    msg += f"      • {kanal}\n"
-                msg += "\n"
+            if mesaj_sayi < min_mesaj_sayisi:
+                msg += f"   📨 {mesaj_sayi} mesaj bulunuyor, {min_mesaj_sayisi} gerekli.\n"
+            if eksik:
+                msg += "   📢 Eksik kanallar:\n"
+                for k in eksik:
+                    msg += f"      • {k}\n"
+            msg += "\n"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -593,6 +547,7 @@ app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
 
 app.add_handler(CommandHandler("cekilis", cekilis))
+app.add_handler(CommandHandler("sayi", sayi))   # <-- /sayi BURADA
 app.add_handler(CommandHandler("mesaj", mesaj))
 app.add_handler(CommandHandler("bitir", bitir))
 app.add_handler(CommandHandler("kontrol", kontrol))
@@ -602,6 +557,7 @@ app.add_handler(
     MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, mesaj_say),
     group=0
 )
+
 
 
 # === !sil KOMUTU ===
