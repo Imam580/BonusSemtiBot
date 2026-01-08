@@ -326,25 +326,25 @@ async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🔊 {user.full_name} konuşabilir artık!")
 
 # --- !sil ---
-async def delete_messages_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
-        await update.message.reply_text("❌ Yetkin yok")
         return
-    args = update.message.text.split()
-    if len(args) != 2:
-        await update.message.reply_text("❌ Kullanım: !sil 10")
+
+    if not context.args or not context.args[0].isdigit():
+        await update.message.reply_text("Kullanım: !sil 10")
         return
-    try:
-        count = int(args[1])
-    except ValueError:
-        await update.message.reply_text("❌ Kullanım: !sil 10")
-        return
-    for i in range(count):
+
+    adet = int(context.args[0])
+
+    for i in range(adet):
         try:
-            await context.bot.delete_message(update.effective_chat.id, update.message.message_id - i)
+            await context.bot.delete_message(
+                chat_id=update.effective_chat.id,
+                message_id=update.message.message_id - i
+            )
         except:
             pass
-    await update.message.reply_text(f"🧹 {count} mesaj silindi!")
+
 
 # --- Mesaj filtreleme ---
 async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
