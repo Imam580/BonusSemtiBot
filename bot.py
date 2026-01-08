@@ -301,7 +301,7 @@ app.add_handler(CommandHandler("unmute", unmute))
 app.add_handler(MessageHandler(tg_filters.TEXT & tg_filters.Regex(r"^!sil \d+$"), delete_messages_cmd))
 app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, check_message))
 
-print("TostBot başlatılıyor...")
-app.run_polling()
+if __name__ == "__main__":
+    app.run_polling()
 
 
