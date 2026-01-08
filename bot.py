@@ -50,29 +50,12 @@ DOGUM_BONUS_BUTONLARI = [
     ("PADİŞAHBET", "https://shoort.im/padisahbet"),
     ("FİXBET", "https://shoort.im/fixbet"),
     ("BETMATİK", "https://shoort.im/betmatik"),
-    ("BAYSPİN", "http://shoort.im/bayspinn"),
     ("BETOFFİCE", "https://shoort.im/betoffice"),
-    ("BETİNE", "https://shoort.im/betinee"),
-    ("XSLOT", "https://shoort.im/xslot"),
-    ("STARZBET", "https://shoort.im/starzbet"),
     ("BETPİPO", "https://shoort.im/betpipo"),
     ("NORABAHİS", "https://shoort.im/norabahis"),
     ("SPİNCO", "https://shoort.im/spinco"),
-    ("HERMESBET", "https://hermesbet.wiki/telegram"),
     ("CRATOSBET", "https://shoort.im/cratosbet"),
-    ("BETKOM", "http://shoort.im/betkom"),
-    ("MASTERBET", "https://shoort.im/masterbetting"),
     ("MARİOBET", "http://shoort.im/mariobonus"),
-    ("BETWİLD", "http://shoort.im/betwild"),
-    ("PASHAGAMING", "https://shoort.im/pashagaming"),
-    ("ROYALBET", "https://shoort.im/royalbet"),
-    ("RADİSSONBET", "https://shoort.im/radissonbet"),
-    ("JOJOBET", "https://dub.pro/jojoyagit"),
-    ("HOLIGANBET", "http://t.t2m.io/holiguncel"),
-    ("KAVBET", "https://shoort.im/kavbet"),
-    ("BETGİT", "https://shoort.im/betgit"),
-    ("MADRIDBET", "https://shoort.im/madridbet"),
-    ("ARTEMİSBET", "https://shoort.im/artemisbet"),
 ]
 
 # ================= KÜFÜR / SPAM =================
@@ -88,13 +71,17 @@ spam_warn = {}
 SPAM_SURE = 5
 SPAM_LIMIT = 5
 
-# ================= SİTE FİLTRELER =================
+# ================= SİTE LİNKLERİ =================
 filters_dict = {
     "zbahis": "https://shoort.im/zbahis",
     "padisahbet": "https://shoort.im/padisahbet",
     "fixbet": "https://shoort.im/fixbet",
     "betoffice": "https://shoort.im/betoffice",
     "betpipo": "https://shoort.im/betpipo",
+    "norabahis": "https://shoort.im/norabahis",
+    "spinco": "https://shoort.im/spinco",
+    "cratosbet": "https://shoort.im/cratosbet",
+    "mariobet": "http://shoort.im/mariobonus",
 }
 
 # ================= ADMIN =================
@@ -173,15 +160,15 @@ async def site_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for k, v in filters_dict.items():
         if k in text:
             kb = InlineKeyboardMarkup(
-                [[InlineKeyboardButton(f"{k.upper()} GİRİŞ", url=v)]]
+                [[InlineKeyboardButton(f"🔗 {k.upper()} GİRİŞ", url=v)]]
             )
-            await update.message.reply_text("🔗 Giriş Linki:", reply_markup=kb)
+            await update.message.reply_text("Giriş linki:", reply_markup=kb)
             return
 
 # ================= EVERY =================
 async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "every" in update.message.text.lower():
-        await update.message.reply_text("🔥 EveryMatrix Siteleri aktif.")
+        await update.message.reply_text("🔥 EveryMatrix altyapılı siteler aktif.")
 
 # ================= DOĞUM =================
 async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -217,8 +204,90 @@ async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
+# ================= LOCK / UNLOCK =================
+async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await is_admin(update, context):
+        await context.bot.set_chat_permissions(update.effective_chat.id, ChatPermissions())
+        await update.message.reply_text("🔒 Grup kilitlendi")
+
+async def unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await is_admin(update, context):
+        await context.bot.set_chat_permissions(
+            update.effective_chat.id,
+            ChatPermissions(can_send_messages=True)
+        )
+        await update.message.reply_text("🔓 Grup açıldı")
+
+# ================= BAN / MUTE =================
+async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await is_admin(update, context) and update.message.reply_to_message:
+        await context.bot.ban_chat_member(
+            update.effective_chat.id,
+            update.message.reply_to_message.from_user.id
+        )
+
+async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await is_admin(update, context) and context.args:
+        await context.bot.unban_chat_member(
+            update.effective_chat.id,
+            int(context.args[0])
+        )
+
+async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await is_admin(update, context) and update.message.reply_to_message:
+        await context.bot.restrict_chat_member(
+            update.effective_chat.id,
+            update.message.reply_to_message.from_user.id,
+            ChatPermissions(can_send_messages=False)
+        )
+
+async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await is_admin(update, context) and update.message.reply_to_message:
+        await context.bot.restrict_chat_member(
+            update.effective_chat.id,
+            update.message.reply_to_message.from_user.id,
+            ChatPermissions(can_send_messages=True)
+        )
+
+# ================= ÇEKİLİŞ =================
+async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global cekilis_aktif, cekilis_katilimcilar
+    if not await is_admin(update, context):
+        return
+
+    cekilis_aktif = True
+    cekilis_katilimcilar.clear()
+
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="katil")]
+    ])
+
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=open("cekilis.jpg", "rb"),
+        caption="🎉 ÇEKİLİŞ BAŞLADI!",
+        reply_markup=kb
+    )
+
+async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    cekilis_katilimcilar.add(q.from_user.id)
+    await q.edit_message_caption(
+        f"🎉 Katılımcı: {len(cekilis_katilimcilar)}"
+    )
+
 # ================= BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
+
+app.add_handler(CommandHandler("lock", lock))
+app.add_handler(CommandHandler("unlock", unlock))
+app.add_handler(CommandHandler("ban", ban))
+app.add_handler(CommandHandler("unban", unban))
+app.add_handler(CommandHandler("mute", mute))
+app.add_handler(CommandHandler("unmute", unmute))
+app.add_handler(CommandHandler("cekilis", cekilis))
+app.add_handler(CallbackQueryHandler(cekilis_buton))
 
 app.add_handler(MessageHandler(tg_filters.Regex(r"^!sil \d+$"), sil))
 
