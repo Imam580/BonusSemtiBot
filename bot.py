@@ -32,6 +32,31 @@ cekilis_kazananlar = []
 BOT_BASLANGIC_ZAMANI = time.time()
 kullanici_mesaj_sayisi = {}
 min_mesaj_sayisi = 0
+EVERY_BUTONLARI = [
+    # Sponsorumuz
+    ("HIZLICASINO", "https://shoort.im/hizlicasino"),
+    ("EGEBET", "https://shoort.im/egebet"),
+    ("KAVBET", "https://shoort.im/kavbet"),
+    ("PUSULABET", "https://shoort.im/pusulabet"),
+    ("HITBET", "https://shoort.im/hitbet"),
+    ("ARTEMISBET", "https://shoort.im/artemisbet"),
+
+    # Diğerleri
+    ("SOSYAL DAVET", "https://linkturbo.co/sosyaldavet"),
+    ("MATGUNCEL", "http://dub.is/matguncel"),
+    ("JOJOBET", "http://dub.pro/jojoyagit"),
+    ("HOLIGANBET", "https://dub.pro/holiguncel"),
+    ("BETSMOVE", "http://dub.is/betsmoveguncel"),
+    ("LUNASOSYAL", "http://lunalink.org/lunasosyal/"),
+    ("MEGABAHIS", "https://dub.is/megaguncel"),
+    ("ZIRVEBET", "https://dub.is/zirveguncel"),
+    ("ODEONBET", "http://dub.is/odeonguncel"),
+    ("MAVIBET", "http://dub.is/maviguncel"),
+    ("LINKELIT", "https://linkelit.co/sosyaldavet"),
+    ("COINBAR", "http://shoort.in/coinbar"),
+    ("NAKITBAHIS", "https://shoort.in/nakitbahis"),
+]
+
 
 # ================= KANALLAR =================
 ZORUNLU_KANALLAR = [
@@ -295,8 +320,30 @@ async def site_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= EVERY =================
 async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if "every" in update.message.text.lower():
-        await update.message.reply_text("🔥 EveryMatrix altyapılı siteler aktif.")
+    if not update.message or not update.message.text:
+        return
+
+    if "every" not in update.message.text.lower():
+        return
+
+    keyboard = []
+    row = []
+
+    for i, (isim, link) in enumerate(EVERY_BUTONLARI, start=1):
+        row.append(InlineKeyboardButton(isim, url=link))
+        if i % 2 == 0:
+            keyboard.append(row)
+            row = []
+
+    if row:
+        keyboard.append(row)
+
+    await update.message.reply_text(
+        "🔥 **BonusSemti Güvencesiyle EveryMatrix Altyapılı Siteler**\n\n"
+        "Aşağıdaki butonlardan giriş yapabilirsiniz:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown"
+    )
 
 # ================= DOĞUM =================
 async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
