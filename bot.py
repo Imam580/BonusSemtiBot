@@ -1,5 +1,8 @@
+import os
 import random
 import time
+from dotenv import load_dotenv
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     CommandHandler,
@@ -8,6 +11,12 @@ from telegram.ext import (
     ContextTypes,
     filters as tg_filters
 )
+
+# ================== ENV ==================
+
+load_dotenv()
+TOKEN = os.environ.get("TOKEN")
+
 
 # ================== GLOBAL ==================
 
@@ -30,11 +39,6 @@ ZORUNLU_KANALLAR = [
     "@BahisKarhanesi",
     "@ozel_oran_2024",
 ]
-
-
-
-load_dotenv()
-TOKEN = os.environ.get("TOKEN")
 
 # --- Tüm filtreler ve linkler ---
 filters_dict = {
