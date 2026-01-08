@@ -353,6 +353,12 @@ cekilis_katilimcilar = set()
 cekilis_kazanan_sayisi = 1
 
 
+# ================== ÇEKİLİŞ GLOBAL ==================
+cekilis_aktif = False
+cekilis_katilimcilar = set()
+cekilis_kazanan_sayisi = 1
+
+
 # -------- ÇEKİLİŞ BAŞLAT --------
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_katilimcilar
@@ -373,8 +379,7 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=photo,
             caption=(
                 "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
-                "🔥 <b>KATILIMCI SAYISI :</b> 0\n"
-                "🔥 https://t.me/bonussemtii_bot\n\n"
+                "🔥 <b>KATILIMCI SAYISI :</b> 0\n\n"
                 "🏆 <b>Katılımcıların kanallarımızı ve botumuzu takip etmesi zorunludur, "
                 "aksi halde ödülden faydalanamazlar!</b>\n\n"
                 "🔥 https://t.me/Canli_Izleme_Mac_Linkleri\n"
@@ -383,7 +388,8 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "🔥 https://t.me/bonussemtietkinlik\n"
                 "🔥 https://t.me/hergunikioran\n"
                 "🔥 https://t.me/BahisKarhanesi\n"
-                "🔥 https://t.me/ozel_oran_2024"
+                "🔥 https://t.me/ozel_oran_2024\n"
+                "🔥 https://t.me/bonussemtii_bot"
             ),
             reply_markup=keyboard,
             parse_mode="HTML"
@@ -431,8 +437,7 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_caption(
         caption=(
             "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
-            f"🔥 <b>KATILIMCI SAYISI :</b> {len(cekilis_katilimcilar)}\n"
-            "🔥 https://t.me/bonussemtii_bot\n\n"
+            f"🔥 <b>KATILIMCI SAYISI :</b> {len(cekilis_katilimcilar)}\n\n"
             "🏆 <b>Katılımcıların kanallarımızı ve botumuzu takip etmesi zorunludur, "
             "aksi halde ödülden faydalanamazlar!</b>\n\n"
             "🔥 https://t.me/Canli_Izleme_Mac_Linkleri\n"
@@ -441,7 +446,8 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🔥 https://t.me/bonussemtietkinlik\n"
             "🔥 https://t.me/hergunikioran\n"
             "🔥 https://t.me/BahisKarhanesi\n"
-            "🔥 https://t.me/ozel_oran_2024"
+            "🔥 https://t.me/ozel_oran_2024\n"
+            "🔥 https://t.me/bonussemtii_bot"
         ),
         reply_markup=keyboard,
         parse_mode="HTML"
@@ -480,7 +486,6 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += f"\n👥 Toplam Katılan: <b>{len(cekilis_katilimcilar)}</b>"
 
     await update.message.reply_text(msg, parse_mode="HTML")
-
 
 
 
