@@ -1,6 +1,7 @@
 import os
 import random
 from dotenv import load_dotenv
+from telegram.helpers import mention_html
 
 from telegram import (
     Update,
@@ -308,10 +309,12 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for key, value in filters_dict.items():
             if key in text:
                 await update.message.reply_text(value)
-# ================== ÇEKİLİŞ SİSTEMİ (BUTONLU) ==================
+# ================== ÇEKİLİŞ SİSTEMİ (BUTONLU + @ ETİKETLİ) ==================
+
+from telegram.helpers import mention_html
 
 cekilis_aktif = False
-cekilis_katilimcilar = []
+cekilis_katilimcilar = {}   # {user_id: username}
 cekilis_kazanan_sayisi = 1
 
 
@@ -325,7 +328,7 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cekilis_katilimcilar.clear()
 
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎉 Katıl (0 kişi)", callback_data="cekilise_katil")]
+        [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="cekilise_katil")]
     ])
 
     await update.message.reply_text(
@@ -342,7 +345,7 @@ async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
 
-    if not context.args or not context.args[0].isdigit():
+    if not context.args:
         await update.message.reply_text("❌ Kullanım: /sayi 3")
         return
 
@@ -362,20 +365,11 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = query.from_user
 
-    for u in cekilis_katilimcilar:
-        if u.id == user.id:
-            await query.answer("⚠️ Zaten katıldın!", show_alert=True)
-            return
+    if user.id in cekilis_katilimcilar:
+        await query.answer("⚠️ Zaten katıldın!", show_alert=True)
+        return
 
-    cekilis_katilimcilar.append(user)
-
-    kisi_sayisi = len(cekilis_katilimcilar)
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"🎉 Katıl ({kisi_sayisi} kişi)", callback_data="cekilise_katil")]
-    ])
-
-    await query.message.edit_reply_markup(reply_markup=keyboard)
+    cekilis_katilimcilar[user.id] = user.username
     await query.answer("✅ Çekilişe katıldın! Bol şans 🍀", show_alert=True)
 
 
@@ -392,22 +386,21 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     kazananlar = random.sample(
-        cekilis_katilimcilar,
+        list(cekilis_katilimcilar.items()),
         min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
     )
 
     msg = "🏆 <b>KAZANANLAR</b>\n\n"
 
-    for user in kazananlar:
-        if user.username:
-            msg += f"🎁 @{user.username}\n"
+    for user_id, username in kazananlar:
+        if username:
+            msg += f"🎁 @{username}\n"
         else:
-            msg += f"🎁 <a href='tg://user?id={user.id}'>Kazanan</a>\n"
+            msg += f"🎁 {mention_html(user_id, 'Kazanan')}\n"
 
     msg += f"\n👥 Toplam katılımcı: {len(cekilis_katilimcilar)}"
 
     await update.message.reply_text(msg, parse_mode="HTML")
-
 
 
 
@@ -429,10 +422,9 @@ app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
 
 # === ÇEKİLİŞ HANDLERLARI ===
-app.add_handler(CommandHandler("cekilis", cekilis), group=1)
-app.add_handler(CommandHandler("sayi", sayi), group=1)
-app.add_handler(CommandHandler("bitir", bitir), group=1)
-
+app.add_handler(CommandHandler("cekilis", cekilis))
+app.add_handler(CommandHandler("sayi", sayi))
+app.add_handler(CommandHandler("bitir", bitir))
 app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^cekilise_katil$"))
 
 # === !sil KOMUTU ===
