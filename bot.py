@@ -311,11 +311,11 @@ async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
 
-    if not context.args or not context.args[0].isdigit():
+    try:
+        adet = int(update.message.text.split()[1])
+    except:
         await update.message.reply_text("Kullanım: !sil 10")
         return
-
-    adet = int(context.args[0])
 
     for i in range(adet):
         try:
