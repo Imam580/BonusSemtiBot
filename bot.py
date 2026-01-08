@@ -38,7 +38,7 @@ spam_log = {}
 spam_warn = {}
 
 # ================= KÜFÜR =================
-KUFUR = ["amk","aq","orospu","piç","ibne","sik","amına"]
+KUFUR = ["amk","orospu","piç","ibne","sik","amına","ananı","bacını","sikerim","kitabını","sikeyim","yavşak","orospu çocuğu"]
 
 # ================= SPONSOR =================
 SPONSOR_SITELER = [
