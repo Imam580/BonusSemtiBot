@@ -75,12 +75,29 @@ DOGUM_BONUS_BUTONLARI = [
     ("PADİŞAHBET", "https://shoort.im/padisahbet"),
     ("FİXBET", "https://shoort.im/fixbet"),
     ("BETMATİK", "https://shoort.im/betmatik"),
+    ("BAYSPİN", "http://shoort.im/bayspinn"),
     ("BETOFFİCE", "https://shoort.im/betoffice"),
+    ("BETİNE", "https://shoort.im/betinee"),
+    ("XSLOT", "https://shoort.im/xslot"),
+    ("STARZBET", "https://shoort.im/starzbet"),
     ("BETPİPO", "https://shoort.im/betpipo"),
     ("NORABAHİS", "https://shoort.im/norabahis"),
     ("SPİNCO", "https://shoort.im/spinco"),
+    ("HERMESBET", "https://hermesbet.wiki/telegram"),
     ("CRATOSBET", "https://shoort.im/cratosbet"),
+    ("BETKOM", "http://shoort.im/betkom"),
+    ("MASTERBET", "https://shoort.im/masterbetting"),
     ("MARİOBET", "http://shoort.im/mariobonus"),
+    ("BETWİLD", "http://shoort.im/betwild"),
+    ("PASHAGAMING", "https://shoort.im/pashagaming"),
+    ("ROYALBET", "https://shoort.im/royalbet"),
+    ("RADİSSONBET", "https://shoort.im/radissonbet"),
+    ("JOJOBET", "https://dub.pro/jojoyagit"),
+    ("HOLIGANBET", "http://t.t2m.io/holiguncel"),
+    ("KAVBET", "https://shoort.im/kavbet"),
+    ("BETGİT", "https://shoort.im/betgit"),
+    ("MADRIDBET", "https://shoort.im/madridbet"),
+    ("ARTEMİSBET", "https://shoort.im/artemisbet"),
 ]
 
 # ================= KÜFÜR / SPAM =================
@@ -247,6 +264,79 @@ async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return m.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
     except:
         return False
+
+# ================= SPONSOR KOMUTLARI =================
+
+# /filter → sponsor ekle
+async def sponsor_ekle(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Sadece admin kullanabilir")
+        return
+
+    if len(context.args) < 2:
+        await update.message.reply_text("Kullanım: /filter siteadi link")
+        return
+
+    site = context.args[0].lower()
+    link = context.args[1]
+
+    filters_dict[site] = link
+    await update.message.reply_text(f"✅ Sponsor eklendi: {site.upper()}")
+
+
+# /remove → sponsor sil
+async def sponsor_sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Sadece admin kullanabilir")
+        return
+
+    if not context.args:
+        await update.message.reply_text("Kullanım: /remove siteadi")
+        return
+
+    site = context.args[0].lower()
+
+    if site in filters_dict:
+        del filters_dict[site]
+        await update.message.reply_text(f"🗑 Sponsor silindi: {site.upper()}")
+    else:
+        await update.message.reply_text("❌ Böyle bir sponsor yok")
+
+
+# /sponsor → tüm sponsorları butonlu at
+async def sponsor_liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Sadece admin kullanabilir")
+        return
+
+    if not filters_dict:
+        await update.message.reply_text("❌ Sponsor site yok")
+        return
+
+    keyboard = []
+    row = []
+
+    for i, (site, link) in enumerate(filters_dict.items(), start=1):
+        row.append(
+            InlineKeyboardButton(
+                site.upper(),
+                url=link if link.startswith("http") else f"https://{link}"
+            )
+        )
+        if i % 2 == 0:
+            keyboard.append(row)
+            row = []
+
+    if row:
+        keyboard.append(row)
+
+    await update.message.reply_text(
+        "⭐ <b>SPONSOR SİTELER</b>\n\n"
+        "👇 <i>Butona tıklayarak siteye yönelebilirsiniz</i>",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
+    )
+
 
 # ================= KÜFÜR =================
 async def kufur_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -495,6 +585,12 @@ app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, spam_kontr
 app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, every_kontrol), group=3)
 app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, dogum_kontrol), group=4)
 app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, site_kontrol), group=5)
+app = ApplicationBuilder().token(TOKEN).build()
+# ================= SPONSOR HANDLER =================
+app.add_handler(CommandHandler("filter", sponsor_ekle))
+app.add_handler(CommandHandler("remove", sponsor_sil))
+app.add_handler(CommandHandler("sponsor", sponsor_liste))
+
 
 print("🔥 BONUSSEMTİ BOT AKTİF")
 app.run_polling()
