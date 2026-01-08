@@ -186,8 +186,11 @@ filters_dict = {
 # --- Yönetici kontrolü ---
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        chat_member = await context.bot.get_chat_member(update.effective_chat.id, update.effective_user.id)
-        return chat_member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
+        member = await context.bot.get_chat_member(
+            update.effective_chat.id,
+            update.effective_user.id
+        )
+        return member.status in ("administrator", "creator")
     except:
         return False
 
