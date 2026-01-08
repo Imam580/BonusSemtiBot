@@ -403,7 +403,6 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
-
 # ================== BUTON ==================
 async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -415,7 +414,7 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = query.from_user.id
 
     if uid in cekilis_katilimcilar:
-        await query.answer("Zaten katıldın", show_alert=True)
+        await query.answer("Zaten katılmış durumdasınız 😊", show_alert=True)
         return
 
     cekilis_katilimcilar.add(uid)
@@ -442,34 +441,16 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
-
-# ================== /sayi ==================
-async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global cekilis_kazanan_sayisi
-
-    if not await is_admin(update, context):
-        return
-
-    if not context.args or not context.args[0].isdigit():
-        await update.message.reply_text("Kullanım: /sayi 3")
-        return
-
-    cekilis_kazanan_sayisi = int(context.args[0])
-    await update.message.reply_text(f"✅ {cekilis_kazanan_sayisi} kazanan seçilecek")
-
-
 # ================== MESAJ SAY ==================
 async def mesaj_say(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user:
         return
 
-    # Bot gruba eklendiği andan öncekileri sayma
     if update.message.date.timestamp() < BOT_BASLANGIC_ZAMANI:
         return
 
     uid = update.message.from_user.id
     kullanici_mesaj_sayisi[uid] = kullanici_mesaj_sayisi.get(uid, 0) + 1
-
 
 # ================== /mesaj ==================
 async def mesaj(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -483,8 +464,9 @@ async def mesaj(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     min_mesaj_sayisi = int(context.args[0])
-    await update.message.reply_text(f"✅ Minimum mesaj şartı: {min_mesaj_sayisi}")
-
+    await update.message.reply_text(
+        f"✅ Minimum mesaj şartı {min_mesaj_sayisi} olarak ayarlanmıştır."
+    )
 
 # ================== KANAL KONTROL ==================
 async def kanallari_kontrol_et_detayli(user_id, context):
@@ -500,7 +482,6 @@ async def kanallari_kontrol_et_detayli(user_id, context):
 
     return eksik
 
-
 # ================== /bitir ==================
 async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global cekilis_aktif, cekilis_kazananlar
@@ -511,7 +492,7 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cekilis_aktif = False
 
     if not cekilis_katilimcilar:
-        await update.message.reply_text("❌ Kimse katılmadı")
+        await update.message.reply_text("Katılım olmadığı için çekiliş tamamlanamadı.")
         return
 
     cekilis_kazananlar = random.sample(
@@ -519,12 +500,11 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
     )
 
-    msg = "🏆 <b>KAZANANLAR</b>\n\n"
+    msg = "🏆 <b>ÇEKİLİŞ SONUCU</b>\n\n"
 
     for uid in cekilis_kazananlar:
         member = await context.bot.get_chat_member(update.effective_chat.id, uid)
         user = member.user
-
         if user.username:
             msg += f"🎁 @{user.username}\n"
         else:
@@ -532,14 +512,13 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
-
-# ================== /kontrol ==================
+# ================== /kontrol (KİBAR) ==================
 async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
 
     if not cekilis_kazananlar:
-        await update.message.reply_text("Kontrol edilecek kazanan yok")
+        await update.message.reply_text("Kontrol edilecek kazanan bulunmamaktadır.")
         return
 
     msg = "📋 <b>KAZANAN KONTROL RAPORU</b>\n\n"
@@ -551,18 +530,32 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         isim = f"@{user.username}" if user.username else f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
 
         mesaj_sayi = kullanici_mesaj_sayisi.get(uid, 0)
-        eksik = await kanallari_kontrol_et_detayli(uid, context)
+        eksik_kanallar = await kanallari_kontrol_et_detayli(uid, context)
 
-        if mesaj_sayi >= min_mesaj_sayisi and not eksik:
-            msg += f"✅ {isim} | {mesaj_sayi} mesaj | OK\n"
+        mesaj_yeterli = mesaj_sayi >= min_mesaj_sayisi
+        kanal_tamam = len(eksik_kanallar) == 0
+
+        if mesaj_yeterli and kanal_tamam:
+            msg += f"✅ {isim}\n"
+            msg += "   🎉 Tüm katılım şartları eksiksiz şekilde sağlanmıştır.\n\n"
         else:
-            msg += f"❌ {isim} | {mesaj_sayi} mesaj\n"
-            if mesaj_sayi < min_mesaj_sayisi:
-                msg += f"   ⛔ Mesaj yetersiz (min {min_mesaj_sayisi})\n"
-            if eksik:
-                msg += "   ⛔ Eksik kanallar:\n"
-                for k in eksik:
-                    msg += f"      • {k}\n"
+            msg += f"❌ {isim}\n"
+
+            if mesaj_yeterli:
+                msg += f"   📨 Mesaj durumu: Gerekli mesaj sayısına ulaşılmıştır ({mesaj_sayi}).\n"
+            else:
+                msg += (
+                    f"   📨 Mesaj durumu: {mesaj_sayi} mesaj bulunuyor, "
+                    f"en az {min_mesaj_sayisi} mesaj gerekmektedir.\n"
+                )
+
+            if kanal_tamam:
+                msg += "   📢 Kanal durumu: Tüm kanallara katılım sağlanmıştır.\n\n"
+            else:
+                msg += "   📢 Kanal durumu: Aşağıdaki kanallara katılım eksiktir:\n"
+                for kanal in eksik_kanallar:
+                    msg += f"      • {kanal}\n"
+                msg += "\n"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -586,7 +579,6 @@ app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
 
 app.add_handler(CommandHandler("cekilis", cekilis))
-app.add_handler(CommandHandler("sayi", sayi))
 app.add_handler(CommandHandler("mesaj", mesaj))
 app.add_handler(CommandHandler("bitir", bitir))
 app.add_handler(CommandHandler("kontrol", kontrol))
