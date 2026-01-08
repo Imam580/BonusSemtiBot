@@ -587,11 +587,6 @@ app.add_handler(
     group=0
 )
 
-
-
-# === !sil KOMUTU ===
-app.add_handler(
-    MessageHandler(tg_filters.TEXT & tg_filters.Regex(r"^!sil \d+$"), delete_messages_cmd)
 )
 
 # === EN SON: NORMAL MESAJLAR ===
