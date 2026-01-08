@@ -350,13 +350,18 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="cekilise_katil")]
     ])
 
-    await update.message.reply_text(
-        "🎉 <b>ÇEKİLİŞ BAŞLADI!</b>\n\n"
-        "👇 Katılmak için butona bas\n\n"
-        "👥 Katılan: <b>0</b>",
-        reply_markup=keyboard,
-        parse_mode="HTML"
-    )
+    with open("cekilis.jpg", "rb") as photo:
+        await context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=photo,
+            caption=(
+                "🎁 <b>BONUS SEMTİ ÇEKİLİŞİ</b>\n\n"
+                "👇 Katılmak için butona bas\n\n"
+                "👥 Katılan: <b>0</b>"
+            ),
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
 
 
 # -------- KAZANAN SAYISI --------
@@ -397,10 +402,12 @@ async def cekilis_buton(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="cekilise_katil")]
     ])
 
-    await query.edit_message_text(
-        f"🎉 <b>ÇEKİLİŞ BAŞLADI!</b>\n\n"
-        f"👇 Katılmak için butona bas\n\n"
-        f"👥 Katılan: <b>{len(cekilis_katilimcilar)}</b>",
+    await query.edit_message_caption(
+        caption=(
+            "🎁 <b>BONUS SEMTİ ÇEKİLİŞİ</b>\n\n"
+            "👇 Katılmak için butona bas\n\n"
+            f"👥 Katılan: <b>{len(cekilis_katilimcilar)}</b>"
+        ),
         reply_markup=keyboard,
         parse_mode="HTML"
     )
@@ -438,18 +445,6 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg += f"🎁 <a href='tg://user?id={user.id}'>{user.first_name}</a>\n"
 
     msg += f"\n👥 Toplam Katılan: <b>{len(cekilis_katilimcilar)}</b>"
-
-    await update.message.reply_text(msg, parse_mode="HTML")
-
-    msg = "🏆 <b>KAZANANLAR</b>\n\n"
-
-    for user_id, username in kazananlar:
-        if username:
-            msg += f"🎁 @{username}\n"
-        else:
-            msg += f"🎁 {mention_html(user_id, 'Kazanan')}\n"
-
-    msg += f"\n👥 Toplam katılımcı: {len(cekilis_katilimcilar)}"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
