@@ -342,16 +342,28 @@ def unmute_keyboard(user_id):
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🔓 Mute Kaldır", callback_data=f"unmute:{user_id}")]
     ])
-
-async def unmute_button(update, context):
+async def unmute_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
+
+    # sadece admin bassın
+    member = await context.bot.get_chat_member(
+        q.message.chat.id,
+        q.from_user.id
+    )
+    if member.status not in ("administrator", "creator"):
+        await q.answer("❌ Yetkin yok", show_alert=True)
+        return
+
     user_id = int(q.data.split(":")[1])
+
     await context.bot.restrict_chat_member(
         q.message.chat.id,
         user_id,
         ChatPermissions(can_send_messages=True)
     )
+
     await q.edit_message_text("🔊 Mute kaldırıldı")
+
 
 async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
@@ -369,6 +381,80 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"🗑️ **{site.upper()}** kaldırıldı", parse_mode="Markdown")
     else:
         await update.message.reply_text("❌ Site bulunamadı")
+
+# ================= GUARD FONKSİYONLARI =================
+# 👇👇👇 BURAYA YAZACAKSIN 👇👇👇
+
+KANAL_REGEX = re.compile(r"@([a-zA-Z0-9_]{5,})")
+
+async def kanal_etiket_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+    if update.message.sender_chat:
+        return
+    if await is_admin(update, context):
+        return
+
+    matches = KANAL_REGEX.findall(update.message.text)
+    if not matches:
+        return
+
+    entities = update.message.entities or []
+    kisi_etiketleri = set()
+    for ent in entities:
+        if ent.type == "mention":
+            kisi_etiketleri.add(
+                update.message.text[ent.offset+1 : ent.offset+ent.length]
+            )
+
+    for tag in matches:
+        if tag not in kisi_etiketleri:
+            await update.message.delete()
+            await context.bot.restrict_chat_member(
+                update.effective_chat.id,
+                update.message.from_user.id,
+                permissions=ChatPermissions(can_send_messages=False),
+                until_date=timedelta(hours=1)
+            )
+            await update.effective_chat.send_message(
+                "🚫 Kanal etiketi yasak. 1 saat mute."
+            )
+            return
+async def forward_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+    if update.message.sender_chat:
+        return
+    if await is_admin(update, context):
+        return
+
+    if update.message.forward_from_chat and update.message.forward_from_chat.type == "channel":
+        await update.message.delete()
+        await context.bot.restrict_chat_member(
+            update.effective_chat.id,
+            update.message.from_user.id,
+            permissions=ChatPermissions(can_send_messages=False),
+            until_date=timedelta(hours=1)
+        )
+        await update.effective_chat.send_message(
+            "🚫 Kanal iletileri yasak. 1 saat mute."
+        )
+EMOJI_REGEX = re.compile("[\U0001F300-\U0001FAFF]")
+
+async def emoji_flood_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+    if update.message.sender_chat:
+        return
+    if await is_admin(update, context):
+        return
+
+    emojis = EMOJI_REGEX.findall(update.message.text)
+    if len(emojis) >= 6:
+        await update.message.delete()
+        await update.effective_chat.send_message(
+            "😀 Emoji flood yapmayın."
+        )
 
 
 # ================= GUARD: KÜFÜR =================
@@ -692,31 +778,72 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ================= APP =================
 app = ApplicationBuilder().token(TOKEN).build()
 
-# COMMANDS
+# ================= COMMANDS =================
 app.add_handler(CommandHandler("sponsor", sponsor))
 app.add_handler(CommandHandler("filter", add_filter))
 app.add_handler(CommandHandler("remove", remove_filter))
+
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
+
 app.add_handler(CommandHandler("lock", lock))
 app.add_handler(CommandHandler("unlock", unlock))
 
-# MESSAGE
-app.add_handler(MessageHandler(filters.Regex(r"^!sil \d+$"), sil))
+# ================= MESSAGE (TEK KOMUT) =================
+app.add_handler(
+    MessageHandler(filters.Regex(r"^!sil \d+$"), sil),
+    group=0
+)
 
-# CALLBACK
-app.add_handler(CallbackQueryHandler(unmute_button, pattern="^unmute:"))
+# ================= CALLBACK =================
+app.add_handler(
+    CallbackQueryHandler(unmute_button, pattern="^unmute:")
+)
 
-# MESSAGE (SIRA ÖNEMLİ)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, site_kontrol), group=0)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, every_kontrol), group=1)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, dogum_kontrol), group=2)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, kanal_etiket_guard), group=3)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, link_guard), group=4)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, spam_guard), group=5)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, kufur_guard), group=6)
+# ================= MESSAGE (ÇOK ÖNEMLİ SIRA) =================
 
+# 1️⃣ ÖZEL CEVAPLAR – EN ÖNCE
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, every_kontrol),
+    group=1
+)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, dogum_kontrol),
+    group=2
+)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, site_kontrol),
+    group=3
+)
+
+# 2️⃣ KORUMA / GUARD’LAR
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, kanal_etiket_guard),
+    group=4
+)
+app.add_handler(
+    MessageHandler(filters.FORWARDED, forward_guard),
+    group=5
+)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, emoji_flood_guard),
+    group=6
+)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, link_guard),
+    group=7
+)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, spam_guard),
+    group=8
+)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, kufur_guard),
+    group=9
+)
+
+# ================= RUN =================
 print("🔥 BOT AKTİF")
 app.run_polling(drop_pending_updates=True)
