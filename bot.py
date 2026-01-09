@@ -557,26 +557,44 @@ async def site_kontrol(update, context):
 async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
-
     if update.message.sender_chat:
         return
-
     if update.message.text.lower() != "every":
         return
-
-    sponsor_text = "\n".join(EVERY_SPONSOR)
-    diger_text = "\n".join(EVERY_DIGER)
 
     mesaj = (
         "🔥 **BonusSemti Güvencesiyle Sponsorumuz Olan "
         "EveryMatrix Altyapılı Siteler**\n\n"
-        f"{sponsor_text}\n\n"
+        "https://shoort.im/hizlicasino\n"
+        "https://shoort.im/egebet\n"
+        "https://shoort.im/kavbet\n"
+        "https://shoort.im/pusulabet\n"
+        "https://shoort.im/hitbet\n"
+        "https://shoort.im/artemisbet\n\n"
         "⚡ **DİĞER EVERYMATRIX ALTYAPISINDA OLAN SİTELER**\n\n"
-        f"{diger_text}"
+        "https://linkturbo.co/sosyaldavet",
+        "http://dub.is/matguncel",
+        "http://dub.pro/jojoyagit",
+        "https://dub.pro/holiguncel",
+        "http://dub.is/betsmoveguncel",
+        "http://lunalink.org/lunasosyal/",
+        "https://dub.is/megaguncel",
+        "https://dub.is/zirveguncel",
+        "http://dub.is/odeonguncel",
+        "http://dub.is/maviguncel",
+        "https://shoort.in/coinbar",
+        "https://shoort.in/nakitbahis",
+
     )
+
+    buttons = []
+    buttons += yatay_butonlar_dict(EVERY_SPONSOR_BUTON, satir=2)
+    buttons.append([InlineKeyboardButton("➖➖➖", callback_data="bos")])
+    buttons += yatay_butonlar_dict(EVERY_DIGER_BUTON, satir=2)
 
     await update.message.reply_text(
         mesaj,
+        reply_markup=InlineKeyboardMarkup(buttons),
         disable_web_page_preview=True,
         parse_mode="Markdown"
     )
