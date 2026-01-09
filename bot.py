@@ -564,19 +564,24 @@ async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
         parse_mode="HTML"
     )
-async def unban_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
+async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
-        await query.answer("❌ Yetkin yok", show_alert=True)
         return
 
-    user_id = int(query.data.split(":")[1])
+    if not update.message.reply_to_message:
+        await update.message.reply_text("❌ Unban için bir mesajı yanıtla")
+        return
+
+    user = update.message.reply_to_message.from_user
 
     await context.bot.unban_chat_member(
         update.effective_chat.id,
-        user_id
+        user.id
+    )
+
+    await update.message.reply_text(
+        f"✅ {user.mention_html()} banı kaldırıldı",
+        parse_mode="HTML"
     )
 
     await query.edit_message_text("✅ Ban kaldırıldı")
