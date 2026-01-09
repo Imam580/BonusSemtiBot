@@ -420,10 +420,7 @@ async def emoji_flood_guard(update, context):
     if await is_admin(update, context):
         return
 
-    text = update.message.text
-    emojis = EMOJI_REGEX.findall(text)
-
-    # emoji yoksa çık
+    emojis = EMOJI_REGEX.findall(update.message.text)
     if len(emojis) < 5:
         return
 
@@ -432,20 +429,20 @@ async def emoji_flood_guard(update, context):
 
     data = emoji_tracker.get(uid)
 
-    # ilk emoji spam
     if not data:
         emoji_tracker[uid] = {"count": 1, "first": now}
+        await update.message.delete()
         return
 
-    # 5 saniye geçtiyse reset
     if now - data["first"] > 5:
         emoji_tracker[uid] = {"count": 1, "first": now}
         emoji_warned.discard(uid)
+        await update.message.delete()
         return
 
     data["count"] += 1
 
-    # 🔴 1. ihlal → uyarı
+    # 🔴 2. ihlal → uyarı
     if data["count"] == 2 and uid not in emoji_warned:
         emoji_warned.add(uid)
         await update.message.delete()
@@ -454,7 +451,7 @@ async def emoji_flood_guard(update, context):
         )
         return
 
-    # ⛔ 2. ihlal → mute
+    # ⛔ 3. ihlal → mute
     if data["count"] >= 3:
         await update.message.delete()
         emoji_tracker.pop(uid, None)
@@ -470,6 +467,7 @@ async def emoji_flood_guard(update, context):
         await update.effective_chat.send_message(
             f"🔇 {update.effective_user.first_name} emoji flood nedeniyle 1 saat mute edildi."
         )
+
 
     # 2. ihlal
     elif data["count"] >= 2:
