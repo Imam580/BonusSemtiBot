@@ -1,27 +1,9 @@
-# =========================
-# BONUSSEMTİ BOT - FULL FIX
-# python-telegram-bot 20.3
-# =========================
-
+# bot.py
 import os, time, random, re
-from datetime import timedelta
 from dotenv import load_dotenv
-
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ChatPermissions
-)
+from telegram import *
+from telegram.ext import *
 from telegram.constants import ChatMemberStatus
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-    filters
-)
 
 # ================= ENV =================
 load_dotenv()
@@ -38,8 +20,9 @@ min_mesaj_sayisi = 0
 cekilis_mesaj_id = None
 
 mesaj_sayaci = {}
+kufur_sayaci = {}
 
-# ================= ZORUNLU KANALLAR =================
+# ================= KANALLAR =================
 ZORUNLU_KANALLAR = [
     "@Canli_Izleme_Mac_Linkleri",
     "@plasespor",
@@ -55,8 +38,6 @@ KUFUR_LISTESI = [
     "sik","siktir","amcık","anan","amına"
 ]
 
-kufur_sayaci = {}
-
 # ================= SİTELER =================
 SITE_LINKLERI = {
     "zbahis":"https://shoort.im/zbahis",
@@ -71,57 +52,41 @@ SPONSOR_SITELER = [
     ("FIXBET","https://shoort.im/fixbet"),
 ]
 
-DOGUM_SITELER = [
-    ("ZBAHİS","https://shoort.im/zbahis"),
-    ("PADİŞAHBET","https://shoort.im/padisahbet"),
-    ("FIXBET","https://shoort.im/fixbet"),
+EVERY_DIGER = [
+    ("HIZLICASINO","https://shoort.im/hizlicasino"),
+    ("EGEBET","https://shoort.im/egebet"),
 ]
 
-# ================= ADMIN =================
-async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        m = await context.bot.get_chat_member(
-            update.effective_chat.id,
-            update.effective_user.id
-        )
-        return m.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
-    except:
-        return False
+DOGUM_SITELER = SPONSOR_SITELER
 
-async def hedef_kullanici(update, context):
+# ================= ADMIN =================
+async def is_admin(update, context):
+    m = await context.bot.get_chat_member(update.effective_chat.id, update.effective_user.id)
+    return m.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
+
+def mention(u):
+    return f"<a href='tg://user?id={u.id}'>{u.full_name}</a>"
+
+def hedef_kullanici(update):
     if update.message.reply_to_message:
         return update.message.reply_to_message.from_user
-    if context.args:
-        username = context.args[0].replace("@","")
-        member = await context.bot.get_chat_member(
-            update.effective_chat.id, username
-        )
-        return member.user
     return None
 
-def mention(user):
-    return f"<a href='tg://user?id={user.id}'>{user.full_name}</a>"
+# ================= ENGELLER =================
+async def forward_engel(update, context):
+    if update.message.forward_from or update.message.forward_from_chat:
+        await update.message.delete()
 
-# ================= KANAL ETİKET ENGEL =================
 async def kanal_etiket_engel(update, context):
-    if not update.message or not update.message.text:
-        return
-    if await is_admin(update, context):
-        return
-
-    mentions = re.findall(r'@([A-Za-z0-9_]{5,})', update.message.text)
-    for m in mentions:
+    if await is_admin(update, context): return
+    text = update.message.text or ""
+    for m in re.findall(r'@([A-Za-z0-9_]{5,})', text):
         try:
             await context.bot.get_chat_member(f"@{m}", update.message.from_user.id)
             await update.message.delete()
             return
         except:
             pass
-
-# ================= FORWARD ENGEL =================
-async def forward_engel(update, context):
-    if update.message.forward_from or update.message.forward_from_chat:
-        await update.message.delete()
 
 # ================= MESAJ SAY =================
 async def mesaj_say(update, context):
@@ -132,8 +97,7 @@ async def mesaj_say(update, context):
 
 # ================= KÜFÜR =================
 async def kufur_kontrol(update, context):
-    if await is_admin(update, context):
-        return
+    if await is_admin(update, context): return
     text = update.message.text.lower()
     uid = update.message.from_user.id
     for k in KUFUR_LISTESI:
@@ -147,12 +111,25 @@ async def kufur_kontrol(update, context):
             )
             return
 
-# ================= SİTE TETİK =================
+# ================= SİTE / EVERY / DOĞUM =================
 async def site_kontrol(update, context):
-    text = update.message.text.lower()
+    t = update.message.text.lower()
 
-    if "doğum" in text:
-        kb = [[InlineKeyboardButton(a, url=b)] for a,b in DOGUM_SITELER]
+    if "every" in t:
+        kb = []
+        for a,b in SPONSOR_SITELER:
+            kb.append([InlineKeyboardButton(a,url=b)])
+        for a,b in EVERY_DIGER:
+            kb.append([InlineKeyboardButton(a,url=b)])
+        await update.message.reply_text(
+            "🔥 <b>EVERYMATRIX SİTELER</b>",
+            reply_markup=InlineKeyboardMarkup(kb),
+            parse_mode="HTML"
+        )
+        return
+
+    if "doğum" in t:
+        kb = [[InlineKeyboardButton(a,url=b)] for a,b in DOGUM_SITELER]
         await update.message.reply_text(
             "🎁 <b>DOĞUM GÜNÜ BONUSLARI</b>",
             reply_markup=InlineKeyboardMarkup(kb),
@@ -160,21 +137,9 @@ async def site_kontrol(update, context):
         )
         return
 
-    if "every" in text:
-        kb = [[InlineKeyboardButton(a, url=b)] for a,b in SPONSOR_SITELER]
-        await update.message.reply_text(
-            "⭐ <b>EVERYMATRIX SPONSOR SİTELER</b>\n👇 Butona tıklayarak siteye gidebilirsiniz",
-            reply_markup=InlineKeyboardMarkup(kb),
-            parse_mode="HTML"
-        )
-        return
-
     for k,v in SITE_LINKLERI.items():
-        if k in text:
-            kb=[[InlineKeyboardButton(
-                "🔗 BUTONA TIKLAYARAK SİTEYE YÖNELEBİLİRSİNİZ",
-                url=v
-            )]]
+        if k in t:
+            kb=[[InlineKeyboardButton("🔗 BUTONA TIKLAYARAK SİTEYE GİR",url=v)]]
             await update.message.reply_text(
                 f"✅ <b>{k.upper()}</b>",
                 reply_markup=InlineKeyboardMarkup(kb),
@@ -184,7 +149,7 @@ async def site_kontrol(update, context):
 
 # ================= SPONSOR =================
 async def sponsor(update, context):
-    kb = [[InlineKeyboardButton(a, url=b)] for a,b in SPONSOR_SITELER]
+    kb = [[InlineKeyboardButton(a,url=b)] for a,b in SPONSOR_SITELER]
     await update.message.reply_text(
         "⭐ <b>SPONSOR SİTELER</b>",
         reply_markup=InlineKeyboardMarkup(kb),
@@ -194,38 +159,29 @@ async def sponsor(update, context):
 # ================= BAN / MUTE =================
 async def ban(update, context):
     if not await is_admin(update, context): return
-    user = await hedef_kullanici(update, context)
+    user = hedef_kullanici(update)
     if not user:
-        await update.message.reply_text("❌ Birini yanıtla veya /ban @kullanici")
+        await update.message.reply_text("❌ Bir mesajı yanıtla")
         return
     await context.bot.ban_chat_member(update.effective_chat.id, user.id)
     await update.message.reply_text(f"🔨 {mention(user)} banlandı", parse_mode="HTML")
 
 async def unban(update, context):
     if not await is_admin(update, context): return
-    user = await hedef_kullanici(update, context)
-    if not user:
-        await update.message.reply_text("❌ /unban @kullanici")
-        return
-    await context.bot.unban_chat_member(update.effective_chat.id, user.id)
-    await update.message.reply_text(f"✅ {mention(user)} banı açıldı", parse_mode="HTML")
+    if not context.args: return
+    await context.bot.unban_chat_member(update.effective_chat.id, int(context.args[0]))
 
 async def mute(update, context):
     if not await is_admin(update, context): return
-    user = await hedef_kullanici(update, context)
+    user = hedef_kullanici(update)
     if not user:
-        await update.message.reply_text("❌ /mute @kullanici 10")
+        await update.message.reply_text("❌ Bir mesajı yanıtla")
         return
-
-    dakika = int(context.args[1]) if len(context.args)>1 and context.args[1].isdigit() else None
-    until = int(time.time()) + (dakika*60) if dakika else None
-
-    kb = [[InlineKeyboardButton("🔓 Muteyi Kaldır", callback_data=f"unmute:{user.id}")]]
+    kb=[[InlineKeyboardButton("🔊 MUTEDEN ÇIKAR",callback_data=f"unmute:{user.id}")]]
     await context.bot.restrict_chat_member(
         update.effective_chat.id,
         user.id,
-        ChatPermissions(can_send_messages=False),
-        until_date=until
+        ChatPermissions(can_send_messages=False)
     )
     await update.message.reply_text(
         f"🔇 {mention(user)} susturuldu",
@@ -235,15 +191,13 @@ async def mute(update, context):
 
 async def unmute(update, context):
     if not await is_admin(update, context): return
-    user = await hedef_kullanici(update, context)
-    if not user:
-        return
+    user = hedef_kullanici(update)
+    if not user: return
     await context.bot.restrict_chat_member(
         update.effective_chat.id,
         user.id,
         ChatPermissions(can_send_messages=True)
     )
-    await update.message.reply_text(f"🔊 {mention(user)} açıldı", parse_mode="HTML")
 
 async def unmute_button(update, context):
     q = update.callback_query
@@ -253,118 +207,103 @@ async def unmute_button(update, context):
         uid,
         ChatPermissions(can_send_messages=True)
     )
-    await q.edit_message_text("🔓 Mute kaldırıldı")
+    await q.answer("Mute kaldırıldı")
 
 # ================= !SİL =================
 async def sil(update, context):
     if not await is_admin(update, context): return
     try:
-        n = int(update.message.text.split()[1])
+        n=int(update.message.text.split()[1])
     except:
         return
     for i in range(n):
         try:
-            await context.bot.delete_message(
-                update.effective_chat.id,
-                update.message.message_id - i
-            )
+            await context.bot.delete_message(update.effective_chat.id, update.message.message_id-i)
         except:
             pass
 
 # ================= ÇEKİLİŞ =================
+def cekilis_text():
+    return (
+        "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
+        f"🔥 <b>KATILIMCI SAYISI :</b> {len(cekilis_katilimcilar)}\n\n"
+        "🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!\n\n"
+        "🔥 https://t.me/Canli_Izleme_Mac_Linkleri\n"
+        "🔥 https://t.me/plasespor\n"
+        "🔥 https://t.me/bonussemti\n"
+        "🔥 https://t.me/bonussemtietkinlik\n"
+        "🔥 https://t.me/BahisKarhanesi"
+    )
+
 async def cekilis(update, context):
     global cekilis_aktif, cekilis_mesaj_id
-    cekilis_aktif = True
+    cekilis_aktif=True
     cekilis_katilimcilar.clear()
-
-    kb = [[InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="katil")]]
-    msg = await context.bot.send_photo(
+    kb=[[InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL",callback_data="katil")]]
+    msg=await context.bot.send_message(
         update.effective_chat.id,
-        photo=open("cekilis.jpg","rb"),
-        caption=(
-            "🔥 <b>BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
-            "🔥 <b>KATILIMCI SAYISI :</b> 0\n\n"
-            "🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!"
-        ),
+        cekilis_text(),
         reply_markup=InlineKeyboardMarkup(kb),
         parse_mode="HTML"
     )
-    cekilis_mesaj_id = msg.message_id
+    cekilis_mesaj_id=msg.message_id
 
 async def cekilis_buton(update, context):
-    q = update.callback_query
+    q=update.callback_query
     cekilis_katilimcilar.add(q.from_user.id)
-    await q.edit_message_caption(
-        f"🔥 <b>KATILIMCI SAYISI :</b> {len(cekilis_katilimcilar)}",
+    await q.edit_message_text(
+        cekilis_text(),
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL",callback_data="katil")]]),
         parse_mode="HTML"
     )
 
-# ================= SAYI / MESAJ =================
+# ================= SAYI / MESAJ / BİTİR / KONTROL =================
 async def sayi(update, context):
     global cekilis_kazanan_sayisi
-    cekilis_kazanan_sayisi = int(context.args[0])
-    await update.message.reply_text("🎯 Kazanan sayısı ayarlandı")
+    cekilis_kazanan_sayisi=int(context.args[0])
 
 async def mesaj(update, context):
     global min_mesaj_sayisi
-    min_mesaj_sayisi = int(context.args[0])
-    await update.message.reply_text("📝 Mesaj şartı ayarlandı")
+    min_mesaj_sayisi=int(context.args[0])
 
-# ================= BİTİR =================
 async def bitir(update, context):
     global cekilis_aktif, cekilis_kazananlar
-    cekilis_aktif = False
-
-    cekilis_kazananlar = random.sample(
+    cekilis_aktif=False
+    cekilis_kazananlar=random.sample(
         list(cekilis_katilimcilar),
-        min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
+        min(cekilis_kazanan_sayisi,len(cekilis_katilimcilar))
     )
-
-    msg = "🏆 <b>ÇEKİLİŞ SONUCU</b>\n\n"
+    msg="🏆 <b>ÇEKİLİŞ SONUCU</b>\n\n"
     for uid in cekilis_kazananlar:
-        m = await context.bot.get_chat_member(update.effective_chat.id, uid)
-        msg += f"🎁 {mention(m.user)}\n"
+        m=await context.bot.get_chat_member(update.effective_chat.id,uid)
+        msg+=f"🎁 {mention(m.user)}\n"
+    await update.message.reply_text(msg,parse_mode="HTML")
 
-    await update.message.reply_text(msg, parse_mode="HTML")
-
-# ================= KONTROL =================
 async def kontrol(update, context):
-    msg = "📋 <b>KAZANAN KONTROL RAPORU</b>\n\n"
+    msg="📋 <b>KAZANAN KONTROL RAPORU</b>\n\n"
     for uid in cekilis_kazananlar:
-        m = await context.bot.get_chat_member(update.effective_chat.id, uid)
-        ms = mesaj_sayaci.get(uid,0)
-        eksik = []
-        for ch in ZORUNLU_KANALLAR:
+        m=await context.bot.get_chat_member(update.effective_chat.id,uid)
+        ms=mesaj_sayaci.get(uid,0)
+        eksik=[]
+        for k in ZORUNLU_KANALLAR:
             try:
-                cm = await context.bot.get_chat_member(ch, uid)
-                if cm.status == "left":
-                    eksik.append(ch)
+                u=await context.bot.get_chat_member(k,uid)
+                if u.status not in ["member","administrator","creator"]:
+                    eksik.append(k)
             except:
-                eksik.append(ch)
-
-        msg += f"❌ {mention(m.user)}\n"
-        msg += f"   📨 Mesaj: {ms}/{min_mesaj_sayisi}\n"
+                eksik.append(k)
+        msg+=(
+            f"❌ {mention(m.user)}\n"
+            f"   📨 Mesaj durumu: {ms}/{min_mesaj_sayisi}\n"
+        )
         if eksik:
-            msg += "   📢 Eksik kanallar:\n"
+            msg+="   📢 Eksik kanallar:\n"
             for e in eksik:
-                msg += f"      • {e}\n"
-        msg += "\n"
-
-    await update.message.reply_text(msg, parse_mode="HTML")
-
-# ================= LOCK =================
-async def lock(update, context):
-    if not await is_admin(update, context): return
-    await context.bot.set_chat_permissions(update.effective_chat.id, ChatPermissions())
-    await update.message.reply_text("🔒 Grup kilitlendi")
-
-async def unlock(update, context):
-    if not await is_admin(update, context): return
-    await context.bot.set_chat_permissions(
-        update.effective_chat.id,
-        ChatPermissions(can_send_messages=True)
-    )
-    await update.message.reply_text("🔓 Grup açıldı")
+                msg+=f"      • {e}\n"
+        else:
+            msg+="   📢 Tüm kanallara katılmış\n"
+        msg+="\n"
+    await update.message.reply_text(msg,parse_mode="HTML")
 
 # ================= BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
@@ -380,8 +319,6 @@ app.add_handler(CommandHandler("sayi", sayi))
 app.add_handler(CommandHandler("mesaj", mesaj))
 app.add_handler(CommandHandler("bitir", bitir))
 app.add_handler(CommandHandler("kontrol", kontrol))
-app.add_handler(CommandHandler("lock", lock))
-app.add_handler(CommandHandler("unlock", unlock))
 
 # CALLBACK
 app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^katil$"))
