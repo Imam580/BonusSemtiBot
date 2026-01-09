@@ -409,6 +409,9 @@ async def forward_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 EMOJI_REGEX = re.compile("[\U0001F300-\U0001FAFF]")
 
+EMOJI_REGEX = re.compile("[\U0001F300-\U0001FAFF]")
+emoji_warned = set()
+
 async def emoji_flood_guard(update, context):
     if not update.message or not update.message.text:
         return
@@ -418,35 +421,31 @@ async def emoji_flood_guard(update, context):
         return
 
     emojis = EMOJI_REGEX.findall(update.message.text)
+    uid = update.message.from_user.id
+
     if len(emojis) < 6:
         return
 
-    uid = update.message.from_user.id
-    now = time.time()
-
-    times = emoji_tracker.get(uid, [])
-    times = [t for t in times if now - t < 5]
-    times.append(now)
-    emoji_tracker[uid] = times
-
     await update.message.delete()
 
-    if len(times) == 1:
+    if uid not in emoji_warned:
+        emoji_warned.add(uid)
         await update.effective_chat.send_message(
             f"⚠️ {update.message.from_user.first_name}, emoji flood yapmayın!"
         )
+        return
 
-    elif len(times) >= 2:
-        emoji_tracker.pop(uid, None)
-        await context.bot.restrict_chat_member(
-            update.effective_chat.id,
-            uid,
-            ChatPermissions(can_send_messages=False),
-            until_date=timedelta(hours=1)
-        )
-        await update.effective_chat.send_message(
-            f"🔇 {update.message.from_user.first_name} emoji flood nedeniyle 1 saat mute."
-        )
+    emoji_warned.discard(uid)
+    await context.bot.restrict_chat_member(
+        update.effective_chat.id,
+        uid,
+        ChatPermissions(can_send_messages=False),
+        until_date=timedelta(hours=1)
+    )
+    await update.effective_chat.send_message(
+        f"🔇 {update.message.from_user.first_name} emoji flood nedeniyle 1 saat mute."
+    )
+
 
 
 # ================= GUARD: KÜFÜR =================
@@ -501,6 +500,11 @@ async def sil(update, context):
 
 
 # ================= GUARD: SPAM =================
+import time
+
+spam_tracker = {}
+spam_warned = set()
+
 async def spam_guard(update, context):
     if not update.message or update.message.sender_chat:
         return
@@ -511,20 +515,23 @@ async def spam_guard(update, context):
     now = time.time()
 
     times = spam_tracker.get(uid, [])
-    times = [t for t in times if now - t < 5]
+    times = [t for t in times if now - t < 5]  # 5 saniye
     times.append(now)
     spam_tracker[uid] = times
 
-    # spam mesajı her zaman sil
+    # mesajı sil
     await update.message.delete()
 
-    if len(times) == 5:
+    if len(times) == 5 and uid not in spam_warned:
+        spam_warned.add(uid)
         await update.effective_chat.send_message(
             f"⚠️ {update.message.from_user.first_name}, spam yapmayın!"
         )
+        return
 
-    elif len(times) >= 6:
+    if len(times) >= 6:
         spam_tracker.pop(uid, None)
+        spam_warned.discard(uid)
         await context.bot.restrict_chat_member(
             update.effective_chat.id,
             uid,
