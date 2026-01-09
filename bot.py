@@ -43,7 +43,7 @@ ZORUNLU_KANALLAR = [
 
 # ================= KÜFÜR =================
 KUFUR_LISTESI = [
-    "amk","aq","amq","orospu","orospu çocuğu","piç","ibne",
+    "amk","oc","amq","orospu","orospu çocuğu","piç","ibne",
     "yarrak","yarak","sik","siktir","amcık","anan","amına","oç"
 ]
 
