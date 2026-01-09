@@ -615,23 +615,31 @@ async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
         parse_mode="HTML"
     )
-async def unmute_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
+async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
-        await query.answer("❌ Yetkin yok", show_alert=True)
         return
 
-    user_id = int(query.data.split(":")[1])
+    if not update.message.reply_to_message:
+        await update.message.reply_text("❌ Unmute için bir mesajı yanıtla")
+        return
+
+    user = update.message.reply_to_message.from_user
 
     await context.bot.restrict_chat_member(
         update.effective_chat.id,
-        user_id,
-        ChatPermissions(can_send_messages=True)
+        user.id,
+        ChatPermissions(
+            can_send_messages=True,
+            can_send_media_messages=True,
+            can_send_other_messages=True,
+            can_add_web_page_previews=True
+        )
     )
 
-    await query.edit_message_text("🔊 Mute kaldırıldı")
+    await update.message.reply_text(
+        f"🔊 {user.mention_html()} artık konuşabilir",
+        parse_mode="HTML"
+    )
 
 
 async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
