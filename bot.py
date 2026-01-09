@@ -222,39 +222,93 @@ async def dogum_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= ADMIN KOMUTLARI =================
 async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context): return
-    u = await hedef_kullanici(update)
-    if not u:
-        await update.message.reply_text("❌ Birini yanıtla.")
+    if not await is_admin(update, context):
         return
-    await context.bot.ban_chat_member(update.effective_chat.id, u.id)
-    await update.message.reply_text(f"🔨 {mention(u)} banlandı", parse_mode="HTML")
 
-async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context): return
-    await update.message.reply_text("ℹ️ Unban için kullanıcı ID gerekir (Telegram kısıtı).")
+    if not update.message.reply_to_message:
+        await update.message.reply_text("❌ Bir mesajı yanıtla")
+        return
+
+    user = update.message.reply_to_message.from_user
+
+    await context.bot.ban_chat_member(update.effective_chat.id, user.id)
+
+    keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton(
+            "🔓 BANI KALDIR",
+            callback_data=f"unban:{user.id}"
+        )
+    ]])
+
+    await update.message.reply_text(
+        f"🔨 {user.mention_html()} banlandı",
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+async def unban_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if not await is_admin(update, context):
+        await query.answer("❌ Yetkin yok", show_alert=True)
+        return
+
+    user_id = int(query.data.split(":")[1])
+
+    await context.bot.unban_chat_member(
+        update.effective_chat.id,
+        user_id
+    )
+
+    await query.edit_message_text("✅ Ban kaldırıldı")
+
 
 async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context): return
-    u = await hedef_kullanici(update)
-    if not u:
-        await update.message.reply_text("❌ Birini yanıtla.")
+    if not await is_admin(update, context):
         return
-    await context.bot.restrict_chat_member(
-        update.effective_chat.id, u.id, ChatPermissions(can_send_messages=False)
-    )
-    await update.message.reply_text(f"🔇 {mention(u)} susturuldu", parse_mode="HTML")
 
-async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context): return
-    u = await hedef_kullanici(update)
-    if not u:
-        await update.message.reply_text("❌ Birini yanıtla.")
+    if not update.message.reply_to_message:
+        await update.message.reply_text("❌ Bir mesajı yanıtla")
         return
+
+    user = update.message.reply_to_message.from_user
+
     await context.bot.restrict_chat_member(
-        update.effective_chat.id, u.id, ChatPermissions(can_send_messages=True)
+        update.effective_chat.id,
+        user.id,
+        ChatPermissions(can_send_messages=False)
     )
-    await update.message.reply_text(f"🔊 {mention(u)} açıldı", parse_mode="HTML")
+
+    keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton(
+            "🔓 MUTEYİ KALDIR",
+            callback_data=f"unmute:{user.id}"
+        )
+    ]])
+
+    await update.message.reply_text(
+        f"🔇 {user.mention_html()} susturuldu",
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+async def unmute_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if not await is_admin(update, context):
+        await query.answer("❌ Yetkin yok", show_alert=True)
+        return
+
+    user_id = int(query.data.split(":")[1])
+
+    await context.bot.restrict_chat_member(
+        update.effective_chat.id,
+        user_id,
+        ChatPermissions(can_send_messages=True)
+    )
+
+    await query.edit_message_text("🔊 Mute kaldırıldı")
+
 
 async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context): return
@@ -277,6 +331,36 @@ async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await context.bot.delete_message(update.effective_chat.id, update.message.message_id-i)
         except: pass
+
+async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    if len(context.args) < 2:
+        await update.message.reply_text("Kullanım: /filter site link")
+        return
+
+    site = context.args[0].lower()
+    link = context.args[1]
+
+    SITE_LINKLERI[site] = link
+    await update.message.reply_text(f"✅ {site} eklendi")
+ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    if not context.args:
+        await update.message.reply_text("Kullanım: /remove site")
+        return
+
+    site = context.args[0].lower()
+
+    if site in SITE_LINKLERI:
+        del SITE_LINKLERI[site]
+        await update.message.reply_text(f"🗑️ {site} silindi")
+    else:
+        await update.message.reply_text("❌ Site bulunamadı")
+
 
 # ================= ÇEKİLİŞ =================
 def cekilis_text():
@@ -393,8 +477,14 @@ app.add_handler(CommandHandler("kontrol", kontrol))
 app.add_handler(CommandHandler("lock", lock))
 app.add_handler(CommandHandler("unlock", unlock))
 
+# 🔥 EKLENENLER
+app.add_handler(CommandHandler("filter", add_filter))
+app.add_handler(CommandHandler("remove", remove_filter))
+
 # CALLBACK
 app.add_handler(CallbackQueryHandler(cekilis_buton, pattern="^katil$"))
+app.add_handler(CallbackQueryHandler(unmute_button, pattern="^unmute:"))
+app.add_handler(CallbackQueryHandler(unban_button, pattern="^unban:"))
 
 # MESSAGE (SIRA ÖNEMLİ)
 app.add_handler(MessageHandler(filters.FORWARDED, forward_engel), group=0)
@@ -409,3 +499,4 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mesaj_say), grou
 
 print("🔥 BONUSSEMTİ BOT AKTİF")
 app.run_polling()
+
