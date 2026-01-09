@@ -485,11 +485,11 @@ async def kufur_guard(update, context):
             )
             return
 
-   async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
+  async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
 
-    # SADECE !sil ile başlıyorsa çalış
+    # sadece !sil ile başlıyorsa çalış
     if not update.message.text.startswith("!sil"):
         return
 
@@ -511,6 +511,7 @@ async def kufur_guard(update, context):
             )
         except:
             pass
+
 
 
 
