@@ -520,10 +520,6 @@ import time
 spam_tracker = {}
 spam_warned = set()
 
-import time
-
-spam_tracker = {}
-
 async def spam_guard(update, context):
     if not update.message or update.message.sender_chat:
         return
@@ -533,22 +529,41 @@ async def spam_guard(update, context):
     uid = update.message.from_user.id
     now = time.time()
 
-    data = spam_tracker.get(uid, {"count": 0, "last": 0})
+    data = spam_tracker.get(uid, {"count": 0, "first": now})
 
-    # 5 saniye geçtiyse sıfırla
-    if now - data["last"] > 5:
-        data = {"count": 0, "last": now}
+    # 5 saniyeyi geçtiyse sıfırla
+    if now - data["first"] > 5:
+        data = {"count": 0, "first": now}
+        spam_warned.discard(uid)
 
     data["count"] += 1
-    data["last"] = now
     spam_tracker[uid] = data
 
-    # 🔴 1. ihlal → uyarı
-if data["count"] == 3:
-    await update.message.delete()
-    await update.message.reply_text(
-        f"⚠️ {update.effective_user.first_name}, spam yapmayın!"
-    )
+    # 🔴 1. ihlal → TEK UYARI
+    if data["count"] >= 5 and uid not in spam_warned:
+        spam_warned.add(uid)
+        await update.message.delete()
+        await update.message.reply_text(
+            f"⚠️ {update.effective_user.first_name}, spam yapmayın!"
+        )
+        return
+
+    # ⛔ 2. ihlal → MUTE
+    if data["count"] >= 6:
+        await update.message.delete()
+        spam_tracker.pop(uid, None)
+        spam_warned.discard(uid)
+
+        await context.bot.restrict_chat_member(
+            update.effective_chat.id,
+            uid,
+            ChatPermissions(can_send_messages=False),
+            until_date=timedelta(hours=1)
+        )
+
+        await update.effective_chat.send_message(
+            f"🔇 {update.effective_user.first_name} spam nedeniyle 1 saat mute edildi."
+        )
 
         
 
