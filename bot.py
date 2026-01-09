@@ -586,6 +586,37 @@ async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.edit_message_text("✅ Ban kaldırıldı")
 
+async def unban_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    # sadece admin basabilsin
+    try:
+        member = await context.bot.get_chat_member(
+            query.message.chat.id,
+            query.from_user.id
+        )
+        if member.status not in ["administrator", "creator"]:
+            await query.answer("❌ Yetkin yok", show_alert=True)
+            return
+    except:
+        return
+
+    # callback_data: unban:USERID
+    data = query.data.split(":")
+    if len(data) != 2:
+        return
+
+    user_id = int(data[1])
+
+    await context.bot.unban_chat_member(
+        query.message.chat.id,
+        user_id
+    )
+
+    await query.edit_message_text("🔓 Ban kaldırıldı")
+
+
 
 async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
