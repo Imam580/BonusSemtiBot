@@ -32,6 +32,36 @@ spam_warn = {}
 SPAM_SURE = 5
 SPAM_LIMIT = 5
 
+DOGUM_BONUS = [
+    ("ZBAHİS", "https://shoort.im/zbahis"),
+    ("PADİŞAHBET", "https://shoort.im/padisahbet"),
+    ("FIXBET", "https://shoort.im/fixbet"),
+    ("BETMATİK", "https://shoort.im/betmatik"),
+    ("BAYSPIN", "http://shoort.im/bayspinn"),
+    ("BETOFFICE", "https://shoort.im/betoffice"),
+    ("BETINE", "https://shoort.im/betinee"),
+    ("XSLOT", "https://shoort.im/xslot"),
+    ("STARZBET", "https://shoort.im/starzbet"),
+    ("BETPIPO", "https://shoort.im/betpipo"),
+    ("NORABAHIS", "https://shoort.im/norabahis"),
+    ("SPINCO", "https://shoort.im/spinco"),
+    ("CRATOSBET", "https://shoort.im/cratosbet"),
+    ("BETKOM", "http://shoort.im/betkom"),
+    ("MASTERBET", "https://shoort.im/masterbetting"),
+    ("MARIOBET", "http://shoort.im/mariobonus"),
+    ("BETWILD", "http://shoort.im/betwild"),
+    ("PASHAGAMING", "https://shoort.im/pashagaming"),
+    ("ROYALBET", "https://shoort.im/royalbet"),
+    ("RADISSONBET", "https://shoort.im/radissonbet"),
+    ("JOJOBET", "https://dub.pro/jojoyagit"),
+    ("HOLIGANBET", "http://t.t2m.io/holiguncel"),
+    ("KAVBET", "https://shoort.im/kavbet"),
+    ("BETGIT", "https://shoort.im/betgit"),
+    ("MADRIDBET", "https://shoort.im/madridbet"),
+    ("ARTEMISBET", "https://shoort.im/artemisbet"),
+]
+
+
 # ================= KANALLAR =================
 ZORUNLU_KANALLAR = [
     "@Canli_Izleme_Mac_Linkleri",
