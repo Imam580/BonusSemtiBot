@@ -546,9 +546,9 @@ async def spam_guard(update, context):
     # 🔴 1. ihlal → uyarı
     if data["count"] == 3:
         await update.message.delete()
-        await update.effective_chat.send_message(
-            f"⚠️ {update.effective_user.first_name}, spam
-
+       await update.message.reply_text(
+    f"⚠️ {update.effective_user.first_name}, spam yapmayın!"
+)
         
 
 async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
