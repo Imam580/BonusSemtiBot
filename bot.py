@@ -485,19 +485,33 @@ async def kufur_guard(update, context):
             )
             return
 
-    try:
-        adet = int(update.message.text.split()[1])
-    except:
-        return await update.message.reply_text("Kullanım: !sil 10")
+   async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
 
-    chat_id = update.effective_chat.id
-    msg_id = update.message.message_id
+    # SADECE !sil ile başlıyorsa çalış
+    if not update.message.text.startswith("!sil"):
+        return
 
-    for i in range(adet + 1):
+    if not await is_admin(update, context):
+        return
+
+    parts = update.message.text.split()
+    if len(parts) != 2 or not parts[1].isdigit():
+        await update.message.reply_text("Kullanım: !sil 10")
+        return
+
+    n = int(parts[1])
+
+    for i in range(n):
         try:
-            await context.bot.delete_message(chat_id, msg_id - i)
+            await context.bot.delete_message(
+                update.effective_chat.id,
+                update.message.message_id - i
+            )
         except:
             pass
+
 
 
 # ================= GUARD: SPAM =================
