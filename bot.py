@@ -54,7 +54,6 @@ KISA_KUFURLER = [
     "göt",
     "got",
 ]
-import re
 
 KISA_REGEX = re.compile(
     rf"(^|\s|[.!?,:;])({'|'.join(map(re.escape, KISA_KUFURLER))})(?=$|\s|[.!?,:;])",
@@ -305,7 +304,6 @@ DOGUM_SITELER = {
 }
 
 # ================= STATE =================
-spam_counter = {}
 
 # ================= ADMIN =================
 async def is_admin(update, context):
@@ -385,41 +383,6 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ================= GUARD FONKSİYONLARI =================
 # 👇👇👇 BURAYA YAZACAKSIN 👇👇👇
 
-KANAL_REGEX = re.compile(r"@([a-zA-Z0-9_]{5,})")
-
-async def kanal_etiket_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-    if update.message.sender_chat:
-        return
-    if await is_admin(update, context):
-        return
-
-    matches = KANAL_REGEX.findall(update.message.text)
-    if not matches:
-        return
-
-    entities = update.message.entities or []
-    kisi_etiketleri = set()
-    for ent in entities:
-        if ent.type == "mention":
-            kisi_etiketleri.add(
-                update.message.text[ent.offset+1 : ent.offset+ent.length]
-            )
-
-    for tag in matches:
-        if tag not in kisi_etiketleri:
-            await update.message.delete()
-            await context.bot.restrict_chat_member(
-                update.effective_chat.id,
-                update.message.from_user.id,
-                permissions=ChatPermissions(can_send_messages=False),
-                until_date=timedelta(hours=1)
-            )
-            await update.effective_chat.send_message(
-                "🚫 Kanal etiketi yasak. 1 saat mute."
-            )
-            return
 async def forward_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
@@ -485,14 +448,7 @@ async def kufur_guard(update, context):
             )
             return
 
-  async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-
-    # sadece !sil ile başlıyorsa çalış
-    if not update.message.text.startswith("!sil"):
-        return
-
+async def sil(update, context):
     if not await is_admin(update, context):
         return
 
@@ -592,6 +548,8 @@ def yatay_butonlar(data: dict, satir=2):
 async def link_guard(update, context):
     if not update.message or update.message.sender_chat:
         return
+    if update.message.forward_from_chat:
+        return
     if await is_admin(update, context):
         return
 
@@ -610,33 +568,47 @@ async def link_guard(update, context):
             reply_markup=unmute_keyboard(uid)
         )
 
+
 # ================= GUARD: KANAL ETİKET =================
+
+KANAL_REGEX = re.compile(r"@([a-zA-Z0-9_]{5,})")
+
 async def kanal_etiket_guard(update, context):
-    if not update.message or update.message.sender_chat:
+    if not update.message or not update.message.text:
+        return
+    if update.message.sender_chat:
         return
     if await is_admin(update, context):
         return
 
-    if not update.message.entities:
+    text = update.message.text
+    matches = KANAL_REGEX.findall(text)
+    if not matches:
         return
 
-    for ent in update.message.entities:
+    entities = update.message.entities or []
+    kisi_etiketleri = set()
+
+    for ent in entities:
         if ent.type == MessageEntityType.MENTION:
-            text = update.message.text[ent.offset: ent.offset + ent.length]
-            if text.lower().startswith("@"):
-                uid = update.message.from_user.id
-                await update.message.delete()
-                await context.bot.restrict_chat_member(
-                    update.effective_chat.id,
-                    uid,
-                    ChatPermissions(can_send_messages=False),
-                    until_date=timedelta(hours=1)
-                )
-                await update.effective_chat.send_message(
-                    "🔇 Kanal etiketi yasaktır",
-                    reply_markup=unmute_keyboard(uid)
-                )
-                return
+            kisi_etiketleri.add(
+                text[ent.offset+1 : ent.offset+ent.length]
+            )
+
+    for tag in matches:
+        if tag not in kisi_etiketleri:
+            await update.message.delete()
+            await context.bot.restrict_chat_member(
+                update.effective_chat.id,
+                update.message.from_user.id,
+                ChatPermissions(can_send_messages=False),
+                until_date=timedelta(hours=1)
+            )
+            await update.effective_chat.send_message(
+                "🚫 Kanal etiketi yasak. 1 saat mute."
+            )
+            return
+
 
 # ================= SİTE ADI ALGILAMA =================
 async def site_kontrol(update, context):
@@ -664,8 +636,7 @@ async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     mesaj = (
-        "🔥 **BonusSemti Güvencesiyle Sponsorumuz Olan "
-        "EveryMatrix Altyapılı Siteler**\n\n"
+        "🔥 **BonusSemti Güvencesiyle Sponsorumuz Olan EveryMatrix Altyapılı Siteler**\n\n"
         "https://shoort.im/hizlicasino\n"
         "https://shoort.im/egebet\n"
         "https://shoort.im/kavbet\n"
@@ -673,32 +644,32 @@ async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "https://shoort.im/hitbet\n"
         "https://shoort.im/artemisbet\n\n"
         "⚡ **DİĞER EVERYMATRIX ALTYAPISINDA OLAN SİTELER**\n\n"
-        "https://linkturbo.co/sosyaldavet",
-        "http://dub.is/matguncel",
-        "http://dub.pro/jojoyagit",
-        "https://dub.pro/holiguncel",
-        "http://dub.is/betsmoveguncel",
-        "http://lunalink.org/lunasosyal/",
-        "https://dub.is/megaguncel",
-        "https://dub.is/zirveguncel",
-        "http://dub.is/odeonguncel",
-        "http://dub.is/maviguncel",
-        "https://shoort.in/coinbar",
-        "https://shoort.in/nakitbahis",
-
+        "https://linkturbo.co/sosyaldavet\n"
+        "http://dub.is/matguncel\n"
+        "http://dub.pro/jojoyagit\n"
+        "https://dub.pro/holiguncel\n"
+        "http://dub.is/betsmoveguncel\n"
+        "http://lunalink.org/lunasosyal/\n"
+        "https://dub.is/megaguncel\n"
+        "https://dub.is/zirveguncel\n"
+        "http://dub.is/odeonguncel\n"
+        "http://dub.is/maviguncel\n"
+        "https://shoort.in/coinbar\n"
+        "https://shoort.in/nakitbahis\n"
     )
 
-    buttons = []
-    buttons += yatay_butonlar_dict(EVERY_SPONSOR_BUTON, satir=2)
-    buttons.append([InlineKeyboardButton("➖➖➖", callback_data="bos")])
-    buttons += yatay_butonlar_dict(EVERY_DIGER_BUTON, satir=2)
+    kb1 = yatay_butonlar(EVERY_SPONSOR_BUTON, satir=2)
+    kb2 = yatay_butonlar(EVERY_DIGER_BUTON, satir=2)
 
     await update.message.reply_text(
         mesaj,
-        reply_markup=InlineKeyboardMarkup(buttons),
+        reply_markup=InlineKeyboardMarkup(
+            kb1.inline_keyboard + kb2.inline_keyboard
+        ),
         disable_web_page_preview=True,
         parse_mode="Markdown"
     )
+
 
 async def dogum_kontrol(update, context):
     if update.message.text.lower() == "doğum":
@@ -758,7 +729,8 @@ async def unmute(update, context):
     )
     await update.message.reply_text("🔊 Kullanıcı açıldı.")
 
-async def sil(update, context):
+async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     if not await is_admin(update, context):
         return
     try:
@@ -842,6 +814,7 @@ app.add_handler(
     MessageHandler(filters.FORWARDED, forward_guard),
     group=5
 )
+
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, emoji_flood_guard),
     group=6
