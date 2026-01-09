@@ -345,6 +345,8 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     SITE_LINKLERI[site] = link
     await update.message.reply_text(f"✅ {site} eklendi")
+
+
  async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
