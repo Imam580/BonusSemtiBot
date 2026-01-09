@@ -386,14 +386,34 @@ EVERY_DIGER = [
     ("NAKITBAHIS","https://shoort.in/nakitbahis"),
 ]
 
-DOGUM_BONUS = [
-    ("ZBAHİS","https://shoort.im/zbahis"),
-    ("PADİŞAHBET","https://shoort.im/padisahbet"),
-    ("FIXBET","https://shoort.im/fixbet"),
-    ("BETOFFICE","https://shoort.im/betoffice"),
-    ("BETPIPO","https://shoort.im/betpipo"),
-    ("NORABAHIS","https://shoort.im/norabahis"),
-    ("SPINCO","https://shoort.im/spinco"),
+DOGUM_BONUS_SITELERI = [
+    ("ZBAHİS", "https://shoort.im/zbahis"),
+    ("PADİŞAHBET", "https://shoort.im/padisahbet"),
+    ("FİXBET", "https://shoort.im/fixbet"),
+    ("BETMATİK", "https://shoort.im/betmatik"),
+    ("BAYSPİN", "http://shoort.im/bayspinn"),
+    ("BETOFFİCE", "https://shoort.im/betoffice"),
+    ("BETİNE", "https://shoort.im/betinee"),
+    ("XSLOT", "https://shoort.im/xslot"),
+    ("STARZBET", "https://shoort.im/starzbet"),
+    ("BETPİPO", "https://shoort.im/betpipo"),
+    ("NORABAHİS", "https://shoort.im/norabahis"),
+    ("SPİNCO", "https://shoort.im/spinco"),
+    ("HERMESBET", "https://hermesbet.wiki/telegram"),
+    ("CRATOSBET", "https://shoort.im/cratosbet"),
+    ("BETKOM", "http://shoort.im/betkom"),
+    ("MASTERBET", "https://shoort.im/masterbetting"),
+    ("MARİOBET", "http://shoort.im/mariobonus"),
+    ("BETWİLD", "http://shoort.im/betwild"),
+    ("PASHAGAMING", "https://shoort.im/pashagaming"),
+    ("ROYALBET", "https://shoort.im/royalbet"),
+    ("RADISSONBET", "https://shoort.im/radissonbet"),
+    ("JOJOBET", "https://dub.pro/jojoyagit"),
+    ("HOLIGANBET", "http://t.t2m.io/holiguncel"),
+    ("KAVBET", "https://shoort.im/kavbet"),
+    ("BETGİT", "https://shoort.im/betgit"),
+    ("MADRIDBET", "https://shoort.im/madridbet"),
+    ("ARTEMİSBET", "https://shoort.im/artemisbet"),
 ]
 
 # ================= YARDIMCI =================
