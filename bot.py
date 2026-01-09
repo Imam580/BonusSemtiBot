@@ -1,24 +1,17 @@
 # bot.py
-import os
-import time
-import random
+import os, time, random
 from dotenv import load_dotenv
 from datetime import timedelta
 
 from telegram import (
-    Update,
-    ChatPermissions,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup
+    Update, ChatPermissions,
+    InlineKeyboardButton, InlineKeyboardMarkup
 )
 from telegram.constants import ChatMemberStatus
 from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-    filters as tg_filters
+    ApplicationBuilder, CommandHandler,
+    MessageHandler, CallbackQueryHandler,
+    ContextTypes, filters as tg_filters
 )
 
 # ================= ENV =================
@@ -30,8 +23,8 @@ BOT_START = time.time()
 
 cekilis_aktif = False
 cekilis_katilimcilar = set()
-cekilis_kazanan_sayisi = 1
 cekilis_kazananlar = []
+cekilis_kazanan_sayisi = 1
 
 kullanici_mesaj = {}
 min_mesaj = 0
@@ -47,18 +40,6 @@ ZORUNLU_KANALLAR = [
     "@ozel_oran_2024",
 ]
 
-# ================= KÜFÜR =================
-KUFUR_LISTESI = [
-    "amk","aq","amına","anan","orospu","piç","ibne",
-    "sik","siktir","yarak","amcık","mal","salak"
-]
-kufur_sayac = {}
-
-# ================= SPAM =================
-spam_log = {}
-SPAM_SURE = 5
-SPAM_LIMIT = 5
-
 # ================= SİTELER =================
 filters_dict = {
     "zbahis": "https://shoort.im/zbahis",
@@ -68,28 +49,26 @@ filters_dict = {
     "betpipo": "https://shoort.im/betpipo",
 }
 
-# ================= EVERY =================
 EVERY_SPONSOR = [
-    ("HIZLICASINO", "https://shoort.im/hizlicasino"),
-    ("EGEBET", "https://shoort.im/egebet"),
-    ("KAVBET", "https://shoort.im/kavbet"),
-    ("PUSULABET", "https://shoort.im/pusulabet"),
-    ("HITBET", "https://shoort.im/hitbet"),
-    ("ARTEMISBET", "https://shoort.im/artemisbet"),
+    ("HIZLICASINO","https://shoort.im/hizlicasino"),
+    ("EGEBET","https://shoort.im/egebet"),
+    ("KAVBET","https://shoort.im/kavbet"),
+    ("PUSULABET","https://shoort.im/pusulabet"),
+    ("HITBET","https://shoort.im/hitbet"),
+    ("ARTEMISBET","https://shoort.im/artemisbet"),
 ]
 
 EVERY_DIGER = [
-    ("JOJOBET", "http://dub.pro/jojoyagit"),
-    ("HOLIGANBET", "https://dub.pro/holiguncel"),
-    ("COINBAR", "http://shoort.in/coinbar"),
-    ("NAKITBAHIS", "https://shoort.in/nakitbahis"),
+    ("JOJOBET","http://dub.pro/jojoyagit"),
+    ("HOLIGANBET","https://dub.pro/holiguncel"),
+    ("COINBAR","http://shoort.in/coinbar"),
+    ("NAKITBAHIS","https://shoort.in/nakitbahis"),
 ]
 
 DOGUM_BONUS = [
-    ("ZBAHİS", "https://shoort.im/zbahis"),
-    ("FIXBET", "https://shoort.im/fixbet"),
-    ("BETPIPO", "https://shoort.im/betpipo"),
-    ("CRATOSBET", "https://shoort.im/cratosbet"),
+    ("ZBAHİS","https://shoort.im/zbahis"),
+    ("FIXBET","https://shoort.im/fixbet"),
+    ("BETPİPO","https://shoort.im/betpipo"),
 ]
 
 # ================= ADMIN =================
@@ -103,149 +82,157 @@ async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         return False
 
-# ================= SPONSOR =================
-async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.text.lower() != "sponsor":
-        return
-
-    kb = []
-    row = []
-    for i,(n,l) in enumerate(filters_dict.items(),1):
-        row.append(InlineKeyboardButton(n.upper(), url=l))
-        if i % 2 == 0:
-            kb.append(row); row=[]
-    if row: kb.append(row)
-
-    await update.message.reply_text(
-        "⭐ **BONUSSEMTİ SPONSOR SİTELERİ**\n\n👇 Butona tıklayarak siteye gidebilirsiniz.",
-        reply_markup=InlineKeyboardMarkup(kb),
-        parse_mode="Markdown"
-    )
-
-# ================= EVERY =================
-async def every(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if "every" not in update.message.text.lower():
-        return
-
-    kb, row = [], []
-    for i,(n,l) in enumerate(EVERY_SPONSOR,1):
-        row.append(InlineKeyboardButton(n, url=l))
-        if i%2==0: kb.append(row); row=[]
-    if row: kb.append(row)
-
-    kb.append([InlineKeyboardButton("────────────", callback_data="x")])
-
-    row=[]
-    for i,(n,l) in enumerate(EVERY_DIGER,1):
-        row.append(InlineKeyboardButton(n, url=l))
-        if i%2==0: kb.append(row); row=[]
-    if row: kb.append(row)
-
-    await update.message.reply_text(
-        "🔥 **EveryMatrix Siteleri**\n\n⭐ **Sponsorlar & Diğerleri**",
-        reply_markup=InlineKeyboardMarkup(kb),
-        parse_mode="Markdown"
-    )
-
-# ================= DOĞUM =================
-async def dogum(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if "doğum" not in update.message.text.lower():
-        return
-
-    kb,row=[],[]
-    for i,(n,l) in enumerate(DOGUM_BONUS,1):
-        row.append(InlineKeyboardButton(n, url=l))
-        if i%2==0: kb.append(row); row=[]
-    if row: kb.append(row)
-
-    await update.message.reply_text(
-        "🎁 **DOĞUM GÜNÜ BONUSLARI**",
-        reply_markup=InlineKeyboardMarkup(kb),
-        parse_mode="Markdown"
-    )
-
-# ================= SITE =================
-async def site(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.lower()
-    for k,v in filters_dict.items():
-        if k in text:
-            kb = InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🔗 BUTONA TIKLAYARAK SİTEYE YÖNELEBİLİRSİNİZ", url=v)]]
+async def hedef_kullanici(update, context):
+    if update.message.reply_to_message:
+        return update.message.reply_to_message.from_user
+    if context.args and context.args[0].startswith("@"):
+        username = context.args[0][1:]
+        try:
+            member = await context.bot.get_chat_member(
+                update.effective_chat.id, username
             )
-            await update.message.reply_text(
-                f"✅ **{k.upper()}**",
-                reply_markup=kb,
-                parse_mode="Markdown"
-            )
-            return
+            return member.user
+        except:
+            return None
+    return None
+
+# ================= FILTER =================
+async def add_filter(update, context):
+    if not await is_admin(update, context):
+        return
+    if len(context.args) < 2:
+        await update.message.reply_text("Kullanım: /filter site link")
+        return
+    filters_dict[context.args[0].lower()] = context.args[1]
+    await update.message.reply_text("✅ Site eklendi")
+
+async def remove_filter(update, context):
+    if not await is_admin(update, context):
+        return
+    if not context.args:
+        await update.message.reply_text("Kullanım: /remove site")
+        return
+    if context.args[0].lower() in filters_dict:
+        del filters_dict[context.args[0].lower()]
+        await update.message.reply_text("🗑️ Site silindi")
+    else:
+        await update.message.reply_text("❌ Bulunamadı")
 
 # ================= BAN / MUTE =================
-async def ban(update,context):
-    if await is_admin(update,context) and update.message.reply_to_message:
-        u=update.message.reply_to_message.from_user
-        await context.bot.ban_chat_member(update.effective_chat.id,u.id)
-        await update.message.reply_text(f"🔨 {u.full_name} banlandı")
+async def ban(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await hedef_kullanici(update, context)
+    if not user:
+        await update.message.reply_text("❌ Birini yanıtla ya da /ban @kullanici")
+        return
+    await context.bot.ban_chat_member(update.effective_chat.id, user.id)
+    await update.message.reply_text(f"🔨 {user.full_name} banlandı")
 
-async def unban(update,context):
-    if await is_admin(update,context) and context.args:
-        await context.bot.unban_chat_member(update.effective_chat.id,int(context.args[0]))
-        await update.message.reply_text("✅ Ban kaldırıldı")
+async def mute(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await hedef_kullanici(update, context)
+    if not user:
+        await update.message.reply_text("❌ Birini yanıtla ya da /mute @kullanici")
+        return
+    await context.bot.restrict_chat_member(
+        update.effective_chat.id,
+        user.id,
+        ChatPermissions(can_send_messages=False)
+    )
+    await update.message.reply_text(f"🔇 {user.full_name} susturuldu")
 
-async def mute(update,context):
-    if await is_admin(update,context) and update.message.reply_to_message:
-        u=update.message.reply_to_message.from_user
-        await context.bot.restrict_chat_member(
-            update.effective_chat.id,u.id,ChatPermissions(can_send_messages=False)
-        )
-        await update.message.reply_text(f"🔇 {u.full_name} susturuldu")
+async def unban(update, context):
+    if not await is_admin(update, context):
+        return
+    if not context.args:
+        await update.message.reply_text("Kullanım: /unban user_id")
+        return
+    await context.bot.unban_chat_member(update.effective_chat.id, int(context.args[0]))
+    await update.message.reply_text("✅ Ban kaldırıldı")
 
-async def unmute(update,context):
-    if await is_admin(update,context) and update.message.reply_to_message:
-        u=update.message.reply_to_message.from_user
-        await context.bot.restrict_chat_member(
-            update.effective_chat.id,u.id,ChatPermissions(can_send_messages=True)
-        )
-        await update.message.reply_text(f"🔊 {u.full_name} açıldı")
+async def unmute(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await hedef_kullanici(update, context)
+    if not user:
+        await update.message.reply_text("❌ Yanıtla ya da @kullanici")
+        return
+    await context.bot.restrict_chat_member(
+        update.effective_chat.id,
+        user.id,
+        ChatPermissions(can_send_messages=True)
+    )
+    await update.message.reply_text(f"🔊 {user.full_name} açıldı")
 
-# ================= LOCK =================
-async def lock(update,context):
-    if await is_admin(update,context):
-        await context.bot.set_chat_permissions(update.effective_chat.id,ChatPermissions())
-        await update.message.reply_text("🔒 Grup kilitlendi")
+# ================= MESAJ / KONTROL =================
+async def mesaj(update, context):
+    global min_mesaj
+    if not await is_admin(update, context):
+        return
+    min_mesaj = int(context.args[0])
+    await update.message.reply_text(f"📨 Minimum mesaj: {min_mesaj}")
 
-async def unlock(update,context):
-    if await is_admin(update,context):
-        await context.bot.set_chat_permissions(
-            update.effective_chat.id,ChatPermissions(can_send_messages=True)
-        )
-        await update.message.reply_text("🔓 Grup açıldı")
+async def mesaj_say(update, context):
+    if update.message.date.timestamp() < BOT_START:
+        return
+    uid = update.message.from_user.id
+    kullanici_mesaj[uid] = kullanici_mesaj.get(uid, 0) + 1
 
-# ================= !SİL =================
-async def sil(update,context):
-    if not await is_admin(update,context): return
-    n=int(update.message.text.split()[1])
-    for i in range(n):
-        try:
-            await context.bot.delete_message(update.effective_chat.id,update.message.message_id-i)
-        except: pass
+async def kontrol(update, context):
+    if not await is_admin(update, context):
+        return
+    msg = "📋 **KAZANAN KONTROL RAPORU**\n\n"
+    for uid in cekilis_kazananlar:
+        member = await context.bot.get_chat_member(update.effective_chat.id, uid)
+        isim = f"@{member.user.username}" if member.user.username else member.user.first_name
+        sayi = kullanici_mesaj.get(uid, 0)
+        eksik = []
+        for kanal in ZORUNLU_KANALLAR:
+            try:
+                uye = await context.bot.get_chat_member(kanal, uid)
+                if uye.status not in ["member","administrator","creator"]:
+                    eksik.append(kanal)
+            except:
+                eksik.append(kanal)
+
+        msg += f"❌ {isim}\n"
+        msg += f"   📨 Mesaj: {sayi}/{min_mesaj}\n"
+        if eksik:
+            msg += "   📢 Eksik kanallar:\n"
+            for k in eksik:
+                msg += f"      • {k}\n"
+        else:
+            msg += "   📢 Kanal durumu: Tamam\n"
+        msg += "\n"
+
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 # ================= ÇEKİLİŞ =================
-async def cekilis(update,context):
+async def cekilis(update, context):
     global cekilis_aktif
-    cekilis_aktif=True
+    cekilis_aktif = True
     cekilis_katilimcilar.clear()
 
-    kb=InlineKeyboardMarkup([[InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL",callback_data="katil")]])
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 ÇEKİLİŞE KATIL", callback_data="katil")]
+    ])
+
     await context.bot.send_photo(
         update.effective_chat.id,
         photo=open("cekilis.jpg","rb"),
-        caption="🎉 **BONUSSEMTİ ÇEKİLİŞİ**\n\nKatılımcı: 0",
+        caption=(
+            "🎉 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
+            "Katılımcı: 0\n\n"
+            "📢 Kanalları takip etmek zorunludur!"
+        ),
         reply_markup=kb,
         parse_mode="Markdown"
     )
 
-async def cekilis_buton(update,context):
-    q=update.callback_query
+async def cekilis_buton(update, context):
+    q = update.callback_query
     await q.answer()
     cekilis_katilimcilar.add(q.from_user.id)
     await q.edit_message_caption(
@@ -253,24 +240,37 @@ async def cekilis_buton(update,context):
         parse_mode="Markdown"
     )
 
+async def sayi(update, context):
+    global cekilis_kazanan_sayisi
+    cekilis_kazanan_sayisi = int(context.args[0])
+    await update.message.reply_text("🎯 Kazanan sayısı ayarlandı")
+
+async def bitir(update, context):
+    global cekilis_aktif, cekilis_kazananlar
+    cekilis_aktif = False
+    cekilis_kazananlar = random.sample(
+        list(cekilis_katilimcilar),
+        min(cekilis_kazanan_sayisi, len(cekilis_katilimcilar))
+    )
+    await update.message.reply_text("🏆 Çekiliş bitti")
+
 # ================= BOT =================
-app=ApplicationBuilder().token(TOKEN).build()
+app = ApplicationBuilder().token(TOKEN).build()
 
-app.add_handler(CommandHandler("ban",ban))
-app.add_handler(CommandHandler("unban",unban))
-app.add_handler(CommandHandler("mute",mute))
-app.add_handler(CommandHandler("unmute",unmute))
-app.add_handler(CommandHandler("lock",lock))
-app.add_handler(CommandHandler("unlock",unlock))
-app.add_handler(CommandHandler("cekilis",cekilis))
+app.add_handler(CommandHandler("filter", add_filter))
+app.add_handler(CommandHandler("remove", remove_filter))
+app.add_handler(CommandHandler("ban", ban))
+app.add_handler(CommandHandler("unban", unban))
+app.add_handler(CommandHandler("mute", mute))
+app.add_handler(CommandHandler("unmute", unmute))
+app.add_handler(CommandHandler("mesaj", mesaj))
+app.add_handler(CommandHandler("kontrol", kontrol))
+app.add_handler(CommandHandler("cekilis", cekilis))
+app.add_handler(CommandHandler("sayi", sayi))
+app.add_handler(CommandHandler("bitir", bitir))
+
 app.add_handler(CallbackQueryHandler(cekilis_buton))
-
-app.add_handler(MessageHandler(tg_filters.Regex(r"^!sil \d+$"),sil))
-
-app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND,sponsor),group=0)
-app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND,every),group=0)
-app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND,dogum),group=0)
-app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND,site),group=1)
+app.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, mesaj_say))
 
 print("🔥 BONUSSEMTİ BOT AKTİF")
 app.run_polling()
