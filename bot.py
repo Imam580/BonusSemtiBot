@@ -243,34 +243,35 @@ SPONSORLAR = {
     "gobonus": "https://shoort.im/gobonus",
 }
 
-EVERY_SPONSOR = [
-    "https://shoort.im/hizlicasino",
-    "https://shoort.im/egebet",
-    "https://shoort.im/kavbet",
-    "https://shoort.im/pusulabet",
-    "https://shoort.im/hitbet",
-    "https://shoort.im/artemisbet",
-]
+EVERY_SPONSOR_BUTON = {
+   "HızlıCasino": "https://shoort.im/hizlicasino",
+    "Egebet": "https://shoort.im/egebet",
+    "Kavbet": "https://shoort.im/kavbet",
+    "Pusulabet": "https://shoort.im/pusulabet",
+    "Hitbet": "https://shoort.im/hitbet",
+    "Artemisbet": "https://shoort.im/artemisbet",
+}
 
-EVERY_DIGER = [
-    "https://linkturbo.co/sosyaldavet",
-    "http://dub.is/matguncel",
-    "http://dub.pro/jojoyagit",
-    "https://dub.pro/holiguncel",
-    "http://dub.is/betsmoveguncel",
-    "http://lunalink.org/lunasosyal/",
-    "https://dub.is/megaguncel",
-    "https://dub.is/zirveguncel",
-    "http://dub.is/odeonguncel",
-    "http://dub.is/maviguncel",
-    "https://linkelit.co/sosyaldavet",
-    "http://shoort.in/coinbar",
-    "https://shoort.in/nakitbahis",
-]
+EVERY_DIGER_BUTON = {
+    "TurboSlot": "https://linkturbo.co/sosyaldavet",
+    "MatBet": "http://dub.is/matguncel",
+    "Jojobet": "http://dub.pro/jojoyagit",
+    "HoliganBet": "https://dub.pro/holiguncel",
+    "Betsmove": "http://dub.is/betsmoveguncel",
+    "LunaBet": "http://lunalink.org/lunasosyal/",
+    "Mega": "https://dub.is/megaguncel",
+    "Zirve": "https://dub.is/zirveguncel",
+    "Odeon": "http://dub.is/odeonguncel",
+    "Mavi": "http://dub.is/maviguncel",
+
+    "Coinbar": "https://shoort.in/coinbar",
+    "NakitBahis": "https://shoort.in/nakitbahis",
+}
+
 
 
 DOGUM_SITELER = {
-    "Zbahis": "https://shoort.im/zbahis",
+   "Zbahis": "https://shoort.im/zbahis",
     "Padisahbet": "https://shoort.im/padisahbet",
     "Fixbet": "https://shoort.im/fixbet",
     "Betmatik": "https://shoort.im/betmatik",
@@ -294,8 +295,8 @@ DOGUM_SITELER = {
     "Royalbet": "https://shoort.im/royalbet",
     "Radissonbet": "https://shoort.im/radissonbet",
 
-    "JojoyaGit": "https://dub.pro/jojoyagit",
-    "HoliGuncel": "http://t.t2m.io/holiguncel",
+    "JojoBet": "https://dub.pro/jojoyagit",
+    "HoliganBet": "http://t.t2m.io/holiguncel",
 
     "Kavbet": "https://shoort.im/kavbet",
     "Betgit": "https://shoort.im/betgit",
