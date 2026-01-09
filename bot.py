@@ -86,8 +86,6 @@ KUFUR_LISTESI = [
     "taşşağını"
 ]
 
-]
-
 # ================= SİTELER =================
 SITE_LINKLERI = {
      # --- urllink.me ---
