@@ -43,7 +43,6 @@ ZORUNLU_KANALLAR = [
 
 # ================= KÜFÜR =================
 KUFUR_LISTESI = [
-    KUFUR_LISTESI = [
     "amk","amq",
     "sik","sikerim","sikti","siktim","siktir","sikeyim",
     "yarak","yarrak","yarram","yarrağım",
