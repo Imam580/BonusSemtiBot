@@ -641,6 +641,43 @@ async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
+async def unmute_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    # sadece admin basabilsin
+    try:
+        member = await context.bot.get_chat_member(
+            query.message.chat.id,
+            query.from_user.id
+        )
+        if member.status not in ["administrator", "creator"]:
+            await query.answer("❌ Yetkin yok", show_alert=True)
+            return
+    except:
+        return
+
+    # callback_data: unmute:USERID
+    data = query.data.split(":")
+    if len(data) != 2:
+        return
+
+    user_id = int(data[1])
+
+    await context.bot.restrict_chat_member(
+        query.message.chat.id,
+        user_id,
+        ChatPermissions(
+            can_send_messages=True,
+            can_send_media_messages=True,
+            can_send_other_messages=True,
+            can_add_web_page_previews=True
+        )
+    )
+
+    await query.edit_message_text("🔊 Mute kaldırıldı")
+
+
 
 async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context): return
