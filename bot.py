@@ -416,22 +416,6 @@ async def yakisana_yapar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         caption="Herkes kendine yakışanı yapar 🙂"
     )
 
-    parts = update.message.text.split()
-    if len(parts) != 2 or not parts[1].isdigit():
-        await update.message.reply_text("Kullanım: !sil 10")
-        return
-
-    n = int(parts[1])
-
-    for i in range(n):
-        try:
-            await context.bot.delete_message(
-                update.effective_chat.id,
-                update.message.message_id - i
-            )
-        except:
-            pass
-
 
 
 
@@ -679,22 +663,7 @@ async def unmute(update, context):
     )
     await update.message.reply_text("🔊 Kullanıcı açıldı.")
 
-async def sil(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    if not await is_admin(update, context):
-        return
-    try:
-        n = int(update.message.text.split()[1])
-    except:
-        return
-    for i in range(n):
-        try:
-            await context.bot.delete_message(
-                update.effective_chat.id,
-                update.message.message_id - i
-            )
-        except:
-            pass
 
 async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.sender_chat:
@@ -728,11 +697,6 @@ app.add_handler(CommandHandler("unmute", unmute))
 app.add_handler(CommandHandler("lock", lock))
 app.add_handler(CommandHandler("unlock", unlock))
 
-# ================= MESSAGE (TEK KOMUT) =================
-app.add_handler(
-    MessageHandler(filters.Regex(r"^!sil \d+$"), sil),
-    group=0
-)
 
 # ================= CALLBACK =================
 app.add_handler(
