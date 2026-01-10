@@ -686,7 +686,7 @@ app = ApplicationBuilder().token(TOKEN).build()
 
 # ================= COMMANDS =================
 app.add_handler(CommandHandler("sponsor", sponsor))
-app.add_handler(CommandHandler("filter", add_filter))
+app.add_handler(CommandHandler("filtre", add_filter))
 app.add_handler(CommandHandler("remove", remove_filter))
 
 app.add_handler(CommandHandler("ban", ban))
