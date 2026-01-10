@@ -131,23 +131,23 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if len(context.args) < 2:
-        return await update.message.reply_text(
-            "Kullanım: /filtre siteismi link"
-        )
+        await update.message.reply_text("Kullanım: /filtre siteismi link")
+        return
 
     site = context.args[0].lower()
     link = context.args[1]
 
-    # shoort.in -> shoort.im güvenliği
+    # shoort.in → shoort.im
     if link.startswith("http://shoort.in/") or link.startswith("https://shoort.in/"):
         link = link.replace("shoort.in", "shoort.im")
 
-   SPONSORLAR[site] = link
-save_sponsorlar(SPONSORLAR)   # 👈 SADECE BU SATIR
-await update.message.reply_text(
-    f"✅ **{site.upper()}** eklendi",
-    parse_mode="Markdown"
-)
+    SPONSORLAR[site] = link
+    save_sponsorlar(SPONSORLAR)
+
+    await update.message.reply_text(
+        f"✅ **{site.upper()}** eklendi",
+        parse_mode="Markdown"
+    )
 
 # ================= UNMUTE BUTONU =================
 def unmute_keyboard(user_id):
