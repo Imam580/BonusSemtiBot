@@ -251,7 +251,7 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if len(context.args) < 2:
         return await update.message.reply_text(
-            "Kullanım: /filter siteismi link"
+            "Kullanım: /filtre siteismi link"
         )
 
     site = context.args[0].lower()
