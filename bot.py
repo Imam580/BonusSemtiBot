@@ -651,44 +651,6 @@ async def link_guard(update, context):
 
 # ================= GUARD: KANAL ETİKET =================
 
-KANAL_REGEX = re.compile(r"@([a-zA-Z0-9_]{5,})")
-
-async def kanal_etiket_guard(update, context):
-    if not update.message or not update.message.text:
-        return
-    if update.message.sender_chat:
-        return
-    if await is_admin(update, context):
-        return
-
-    text = update.message.text
-    matches = KANAL_REGEX.findall(text)
-    if not matches:
-        return
-
-    entities = update.message.entities or []
-    kisi_etiketleri = set()
-
-    for ent in entities:
-        if ent.type == MessageEntityType.MENTION:
-            kisi_etiketleri.add(
-                text[ent.offset+1 : ent.offset+ent.length]
-            )
-
-    for tag in matches:
-        if tag not in kisi_etiketleri:
-            await update.message.delete()
-            await context.bot.restrict_chat_member(
-                update.effective_chat.id,
-                update.message.from_user.id,
-                ChatPermissions(can_send_messages=False),
-                until_date=timedelta(hours=1)
-            )
-            await update.effective_chat.send_message(
-                "🚫 Kanal etiketi yasak. 1 saat mute."
-            )
-            return
-
 
 # ================= SİTE ADI ALGILAMA =================
 async def site_kontrol(update, context):
@@ -886,10 +848,6 @@ app.add_handler(
 )
 
 # 2️⃣ GENEL KORUMALAR
-app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, kanal_etiket_guard),
-    group=10
-)
 app.add_handler(
     MessageHandler(filters.FORWARDED, forward_guard),
     group=11
