@@ -45,6 +45,7 @@ if not TOKEN:
 # 🔧 BURAYA AYNI FORMATTA EKLEYEREK ÇOĞALT
 
 SPONSORLAR = load_sponsorlar()
+SPONSOR_PER_PAGE = 20
 
 
 EVERY_SPONSOR_BUTON = {
@@ -149,6 +150,37 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
+def sponsor_keyboard(page: int):
+    items = list(SPONSORLAR.items())
+
+    start = page * SPONSOR_PER_PAGE
+    end = start + SPONSOR_PER_PAGE
+    page_items = items[start:end]
+
+    buttons = []
+    row = []
+
+    for i, (name, link) in enumerate(page_items, 1):
+        row.append(InlineKeyboardButton(name.upper(), url=link))
+        if i % 2 == 0:
+            buttons.append(row)
+            row = []
+
+    if row:
+        buttons.append(row)
+
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton("⬅️ Önceki", callback_data=f"sponsor:{page-1}"))
+    if end < len(items):
+        nav.append(InlineKeyboardButton("➡️ Sonraki", callback_data=f"sponsor:{page+1}"))
+
+    if nav:
+        buttons.append(nav)
+
+    return InlineKeyboardMarkup(buttons)
+
+
 # ================= UNMUTE BUTONU =================
 def unmute_keyboard(user_id):
     return InlineKeyboardMarkup([
@@ -192,12 +224,13 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     SPONSORLAR.pop(site)
-    save_sponsorlar(SPONSORLAR)
+save_sponsorlar(SPONSORLAR)
 
-    await update.message.reply_text(
-        f"🗑️ **{site.upper()}** kaldırıldı",
-        parse_mode="Markdown"
-    )
+await update.message.reply_text(
+    f"🗑️ **{site.upper()}** kaldırıldı",
+    parse_mode="Markdown"
+)
+
 
 
 
@@ -407,6 +440,8 @@ def yatay_butonlar(data: dict, satir=2):
         rows.append(row)
     return InlineKeyboardMarkup(rows)
 
+
+
 # ================= GUARD: LİNK =================
 async def link_guard(update, context):
     if not update.message or update.message.sender_chat:
@@ -561,15 +596,28 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not SPONSORLAR:
-        return await update.message.reply_text("Sponsor bulunamadı.")
-
-    kb = yatay_butonlar(SPONSORLAR, satir=2)
+        await update.message.reply_text("Sponsor bulunamadı.")
+        return
 
     await update.message.reply_text(
-        "🤝 **Sponsorlarımız**",
-        reply_markup=kb,
+        "🤝 **Sponsorlarımız (Sayfa 1)**",
+        reply_markup=sponsor_keyboard(0),
         parse_mode="Markdown"
     )
+
+async def sponsor_page_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+
+    page = int(q.data.split(":")[1])
+
+    await q.edit_message_text(
+        f"🤝 **Sponsorlarımız (Sayfa {page+1})**",
+        reply_markup=sponsor_keyboard(page),
+        parse_mode="Markdown"
+    )
+
+
 
 
 # ================= APP =================
@@ -593,6 +641,11 @@ app.add_handler(CommandHandler("unlock", unlock))
 app.add_handler(
     CallbackQueryHandler(unmute_button, pattern="^unmute:")
 )
+
+app.add_handler(
+    CallbackQueryHandler(sponsor_page_callback, pattern=r"^sponsor:\d+")
+)
+
 
 # ================= 1️⃣ ÖZEL CEVAPLAR (ASLA SİLİNMEZ) =================
 
