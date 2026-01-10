@@ -26,82 +26,6 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise RuntimeError("TOKEN missing")
 
-KISA_KUFURLER = [
-    # kısa klasikler
-    "amk", "amq", "mk",
-    "oç", "oc",
-
-    # tek kelimelik ağır hakaretler
-    "piç", "pic",
-    "ibne",
-    "puşt", "pust",
-    "yavşak",
-    "gavat",
-    "pezevenk",
-    "şerefsiz",
-    "namussuz",
-    "kahpe",
-    "sürtük",
-    "gerzek",
-
-    # cinsel (tek kelime)
-    "sik",
-    "siktir",
-    "yarrak",
-    "yarak",
-    "amcık",
-    "amcik",
-    "göt",
-    "got",
-]
-
-KISA_REGEX = re.compile(
-    rf"(^|\s|[.!?,:;])({'|'.join(map(re.escape, KISA_KUFURLER))})(?=$|\s|[.!?,:;])",
-    re.IGNORECASE
-)
-
-UZUN_KUFURLER = [
-    # anne üzerinden
-    "anan",
-    "ananı",
-    "anani",
-    "ananı sikeyim",
-    "anani sikeyim",
-    "ananı sikiyim",
-    "anani sikiyim",
-    "amına koyayım",
-    "amina koyayim",
-    "amına koyim",
-    "amina koyim",
-    "amına",
-    "amina",
-
-    # baba üzerinden
-    "babanı sikeyim",
-    "babani sikeyim",
-
-    # orospu türevleri
-    "orospu",
-    "orospu evladı",
-    "orospu çocuğu",
-    "orospunun evladı",
-    "orospunun çocuğu",
-
-    # uzun cinsel ifadeler
-    "sikerim",
-    "sikeyim",
-    "sikiyim",
-    "siktir git",
-    "yarram",
-    "yarrağım",
-
-    # birleşik ağır hakaretler
-    "şerefsiz herif",
-    "mal oğlu mal",
-    "götveren",
-    "haysiyetsiz",
-]
-
 # ================= LİNK LİSTELERİ =================
 # 🔧 BURAYA AYNI FORMATTA EKLEYEREK ÇOĞALT
 
@@ -492,38 +416,6 @@ async def yakisana_yapar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         caption="Herkes kendine yakışanı yapar 🙂"
     )
 
-# ================= GUARD: KÜFÜR =================
-async def kufur_guard(update, context):
-    if not update.message or not update.message.text:
-        return
-    if update.message.sender_chat:
-        return
-    if await is_admin(update, context):
-        return
-
-    text = update.message.text.lower()
-
-    # 1️⃣ Kısa küfürler (regex)
-    if KISA_REGEX.search(text):
-        await update.message.delete()
-        await update.effective_chat.send_message(
-            "⚠️ Lütfen küfür etmeyin."
-        )
-        return
-
-    # 2️⃣ Uzun / açık küfürler (ifade bazlı)
-    for kufur in UZUN_KUFURLER:
-        if kufur in text:
-            await update.message.delete()
-            await update.effective_chat.send_message(
-                "⚠️ Lütfen küfür etmeyin."
-            )
-            return
-
-async def sil(update, context):
-    if not await is_admin(update, context):
-        return
-
     parts = update.message.text.split()
     if len(parts) != 2 or not parts[1].isdigit():
         await update.message.reply_text("Kullanım: !sil 10")
@@ -881,10 +773,6 @@ app.add_handler(
     group=11
 )
 
-app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, kufur_guard),
-    group=12
-)
 
 # ================= 🚨 3️⃣ FLOOD / SPAM (EN SON – DOKUNULMAZ) =================
 
