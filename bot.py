@@ -473,19 +473,24 @@ async def emoji_flood_guard(update, context):
             f"🔇 {msg.from_user.first_name} emoji flood nedeniyle 1 saat mute edildi."
         )
 
+import re
+
+YAKISAN_REGEX = re.compile(r"herkes\s+kendine\s+yakışanı\s+yapar", re.I)
+
 async def yakisana_yapar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
+    msg = update.message
+    if not msg or not msg.text:
         return
-    if update.message.sender_chat:
+    if msg.sender_chat:
         return
 
-    text = update.message.text.lower()
+    if not YAKISAN_REGEX.search(msg.text):
+        return
 
-    if "herkes kendine yakışanı yapar" in text:
-        await update.message.reply_video(
-            video="BAACAgQAAxkBAAIDCWliswiewA9b1QJAvIINw-RIl4zsAAJRHgACUaERU5NrbiN0upsgOAQ",
-            caption="Valla herkes kendine yakışanı yapsın"
-        )
+    await msg.reply_video(
+        video="BAACAgQAAxkBAAIDCWliswiewA9b1QJAvIINw-RIl4zsAAJRHgACUaERU5NrbiN0upsgOAQ",
+        caption="Herkes kendine yakışanı yapar 🙂"
+    )
 
 # ================= GUARD: KÜFÜR =================
 async def kufur_guard(update, context):
@@ -842,45 +847,52 @@ app.add_handler(
     CallbackQueryHandler(unmute_button, pattern="^unmute:")
 )
 
-# ================= MESSAGE (ÇOK ÖNEMLİ SIRA) =================
+# ================= 1️⃣ ÖZEL CEVAPLAR (ASLA SİLİNMEZ) =================
 
-# 1️⃣ ÖZEL CEVAPLAR (ASLA SİLİNMEYECEKLER)
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, every_kontrol),
     group=1
 )
+
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, dogum_kontrol),
     group=2
 )
+
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, site_kontrol),
     group=3
 )
+
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, yakisana_yapar),
-    group=1
+    group=4
 )
 
-# 2️⃣ GENEL KORUMALAR
+# ================= 2️⃣ GENEL KORUMALAR =================
+
 app.add_handler(
     MessageHandler(filters.FORWARDED, forward_guard),
-    group=11
-)
-app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, link_guard),
-    group=12
-)
-app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, kufur_guard),
-    group=13
+    group=10
 )
 
-# 🚨 3️⃣ FLOOD / SPAM (EN SON – DOKUNULMAZ)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, link_guard),
+    group=11
+)
+
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, kufur_guard),
+    group=12
+)
+
+# ================= 🚨 3️⃣ FLOOD / SPAM (EN SON – DOKUNULMAZ) =================
+
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, emoji_flood_guard),
     group=98
 )
+
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, spam_guard),
     group=99
@@ -889,4 +901,5 @@ app.add_handler(
 # ================= RUN =================
 print("🔥 BOT AKTİF")
 app.run_polling(drop_pending_updates=True)
+
 
