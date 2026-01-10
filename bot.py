@@ -473,6 +473,20 @@ async def emoji_flood_guard(update, context):
             f"🔇 {msg.from_user.first_name} emoji flood nedeniyle 1 saat mute edildi."
         )
 
+async def yakisana_yapar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+    if update.message.sender_chat:
+        return
+
+    text = update.message.text.lower()
+
+    if "herkes kendine yakışanı yapar" in text:
+        await update.message.reply_video(
+            video="BAACAgQAAxkBAAIDCWliswiewA9b1QJAvIINw-RIl4zsAAJRHgACUaERU5NrbiN0upsgOAQ",
+            caption="Valla herkes kendine yakışanı yapsın"
+        )
+
 
 
 
@@ -846,6 +860,10 @@ app.add_handler(
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, site_kontrol),
     group=3
+)
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, yakisana_yapar),
+    group=1
 )
 
 # 2️⃣ GENEL KORUMALAR
