@@ -240,22 +240,6 @@ SPONSORLAR = {
     "radissonbet": "https://shoort.im/radissonbet",
     "betsalvador": "https://shoort.im/betsalvador",
     "gobonus": "https://shoort.im/gobonus",
-     "Hızlı": "https://shoort.im/hizlicasino",
-    "Egebet": "https://shoort.im/egebet",
-    "Kav": "https://shoort.im/kavbet",
-    "Pusula": "https://shoort.im/pusulabet",
-    "Hitbet": "https://shoort.im/hitbet",
-    "Artemis": "https://shoort.im/artemisbet",
-    "Turbo": "https://linkturbo.co/sosyaldavet",
-    "Mat": "http://dub.is/matguncel",
-    "Jojo": "http://dub.pro/jojoyagit",
-    "Holi": "https://dub.pro/holiguncel",
-    "Betsmove": "http://dub.is/betsmoveguncel",
-    "Luna": "http://lunalink.org/lunasosyal/",
-    "Mega": "https://dub.is/megaguncel",
-    "Zirve": "https://dub.is/zirveguncel",
-    "Odeon": "http://dub.is/odeonguncel",
-    "Mavi": "http://dub.is/maviguncel",
 }
 
 EVERY_SPONSOR_BUTON = {
