@@ -224,12 +224,12 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     SPONSORLAR.pop(site)
-save_sponsorlar(SPONSORLAR)
+    save_sponsorlar(SPONSORLAR)
 
-await update.message.reply_text(
-    f"🗑️ **{site.upper()}** kaldırıldı",
-    parse_mode="Markdown"
-)
+    await update.message.reply_text(
+        f"🗑️ **{site.upper()}** kaldırıldı",
+        parse_mode="Markdown"
+    )
 
 
 
