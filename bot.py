@@ -240,6 +240,12 @@ SPONSORLAR = {
     "radissonbet": "https://shoort.im/radissonbet",
     "betsalvador": "https://shoort.im/betsalvador",
     "gobonus": "https://shoort.im/gobonus",
+     "HızlıCasino": "https://shoort.im/hizlicasino",
+    "Egebet": "https://shoort.im/egebet",
+    "Kavbet": "https://shoort.im/kavbet",
+    "Pusulabet": "https://shoort.im/pusulabet",
+    "Hitbet": "https://shoort.im/hitbet",
+    "Artemisbet": "https://shoort.im/artemisbet",
 }
 
 EVERY_SPONSOR_BUTON = {
