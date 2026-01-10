@@ -385,6 +385,11 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("❌ Site bulunamadı")
 
+async def video_id_al(update, context):
+    if update.message.video:
+        await update.message.reply_text(update.message.video.file_id)
+
+
 # ================= GUARD FONKSİYONLARI =================
 # 👇👇👇 BURAYA YAZACAKSIN 👇👇👇
 
@@ -808,6 +813,7 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = ApplicationBuilder().token(TOKEN).build()
 
 # ================= COMMANDS =================
+app.add_handler(MessageHandler(filters.VIDEO, video_id_al))
 app.add_handler(CommandHandler("sponsor", sponsor))
 app.add_handler(CommandHandler("filter", add_filter))
 app.add_handler(CommandHandler("remove", remove_filter))
