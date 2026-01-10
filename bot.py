@@ -182,21 +182,23 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not context.args:
-        return await update.message.reply_text(
-            "Kullanım: /remove siteismi"
-        )
+        await update.message.reply_text("Kullanım: /remove siteismi")
+        return
 
     site = context.args[0].lower()
 
-   if site in SPONSORLAR:
+    if site not in SPONSORLAR:
+        await update.message.reply_text("❌ Site bulunamadı")
+        return
+
     SPONSORLAR.pop(site)
-    save_sponsorlar(SPONSORLAR)   # 👈 SADECE BU SATIR
+    save_sponsorlar(SPONSORLAR)
+
     await update.message.reply_text(
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
-    else:
-        await update.message.reply_text("❌ Site bulunamadı")
+
 
 
 # ================= GUARD FONKSİYONLARI =================
