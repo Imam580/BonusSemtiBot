@@ -28,7 +28,7 @@ if not TOKEN:
 
 KISA_KUFURLER = [
     # kısa klasikler
-    "amk", "aq", "amq", "mk",
+    "amk", "amq", "mk",
     "oç", "oc",
 
     # tek kelimelik ağır hakaretler
