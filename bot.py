@@ -487,10 +487,6 @@ async def yakisana_yapar(update: Update, context: ContextTypes.DEFAULT_TYPE):
             caption="Valla herkes kendine yakışanı yapsın"
         )
 
-
-
-
-
 # ================= GUARD: KÜFÜR =================
 async def kufur_guard(update, context):
     if not update.message or not update.message.text:
