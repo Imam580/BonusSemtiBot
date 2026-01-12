@@ -495,22 +495,42 @@ async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.lower() != "every":
         return
 
-    kb_sponsor = yatay_butonlar(EVERY_SPONSOR_BUTON, satir=2)
-    kb_diger = yatay_butonlar(EVERY_DIGER_BUTON, satir=2)
+    keyboard = []
 
-    # 1️⃣ Sponsor olanlar
+    # 🔥 SPONSOR OLAN BAŞLIK (tıklanamaz)
+    keyboard.append([
+        InlineKeyboardButton(
+            "🔥 SPONSOR OLAN EVERYMATRIX SİTELERİ 🔥",
+            callback_data="noop"
+        )
+    ])
+
+    # sponsor olan siteler
+    sponsor_kb = yatay_butonlar(EVERY_SPONSOR_BUTON, satir=2)
+    keyboard.extend(sponsor_kb.inline_keyboard)
+
+    # ⚡ boşluk gibi ayırıcı
+    keyboard.append([
+        InlineKeyboardButton(" ", callback_data="noop")
+    ])
+
+    # ⚡ SPONSOR OLMAYAN BAŞLIK
+    keyboard.append([
+        InlineKeyboardButton(
+            "⚡ SPONSOR OLMAYAN EVERYMATRIX SİTELERİ ⚡",
+            callback_data="noop"
+        )
+    ])
+
+    # sponsor olmayan siteler
+    diger_kb = yatay_butonlar(EVERY_DIGER_BUTON, satir=2)
+    keyboard.extend(diger_kb.inline_keyboard)
+
     await update.message.reply_text(
-        "🔥 **SPONSOR OLAN EVERYMATRIX SİTELERİ**",
-        reply_markup=kb_sponsor,
-        parse_mode="Markdown"
+        "👇 Siteler aşağıda",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-    # 2️⃣ Sponsor olmayanlar
-    await update.message.reply_text(
-        "⚡ **SPONSOR OLMAYAN EVERYMATRIX SİTELERİ**",
-        reply_markup=kb_diger,
-        parse_mode="Markdown"
-    )
 
 
 
