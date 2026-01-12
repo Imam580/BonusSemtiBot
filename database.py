@@ -1,9 +1,23 @@
-import sqlite3
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
 
-DB_NAME = "bot.db"
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL missing")
+
 
 def get_db():
-    return sqlite3.connect(DB_NAME)
+    return psycopg2.connect(
+        DATABASE_URL,
+        sslmode="require",
+        cursor_factory=RealDictCursor
+    )
+
 
 def create_tables():
     db = get_db()
@@ -11,11 +25,11 @@ def create_tables():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS filters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        trigger TEXT UNIQUE,
-        response TEXT
-    )
+        trigger TEXT PRIMARY KEY,
+        response TEXT NOT NULL
+    );
     """)
 
     db.commit()
+    cur.close()
     db.close()
