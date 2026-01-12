@@ -77,27 +77,28 @@ def db_add_sponsor(site, link):
     db.close()
 
 
-async def remove_filter(update, context):
+async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
 
     if not context.args:
-        await update.message.reply_text("Kullanım: /remove site")
+        await update.message.reply_text("Kullanım: /remove siteismi")
         return
 
     site = context.args[0].lower()
 
-    if site not in SPONSOR_CACHE:
-        await update.message.reply_text("❌ Yok")
-        return
-
-    # defterden sil
+    # DB'den sil
     db_remove_sponsor(site)
 
-    # akıldan sil
-    del SPONSOR_CACHE[site]
+    # RAM'den sil (ASIL OLAY BU)
+    if site in SPONSOR_CACHE:
+        del SPONSOR_CACHE[site]
 
-    await update.message.reply_text(f"🗑️ {site} silindi")
+    await update.message.reply_text(
+        f"🗑️ **{site.upper()}** kaldırıldı",
+        parse_mode="Markdown"
+    )
+
 
 
 
