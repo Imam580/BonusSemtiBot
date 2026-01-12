@@ -4,8 +4,7 @@ import re
 from datetime import timedelta
 from dotenv import load_dotenv
 
-# ================= CACHE =================
-SPONSOR_CACHE = {}
+
 
 
 
@@ -15,7 +14,8 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
-from telegram.constants import ChatMemberStatus, MessageEntityType
+from telegram.constants import ChatMemberStatus
+
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -43,20 +43,6 @@ def db_get_all_sponsors():
 
     return sponsors
 
-def load_sponsor_cache():
-    global SPONSOR_CACHE
-
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("SELECT trigger, response FROM filters")
-    rows = cur.fetchall()
-    cur.close()
-    db.close()
-
-    SPONSOR_CACHE = {row["trigger"]: row["response"] for row in rows}
-
-    print(f"✅ CACHE YÜKLENDİ: {len(SPONSOR_CACHE)} sponsor")
-
 
 
 
@@ -77,27 +63,18 @@ def db_add_sponsor(site, link):
     db.close()
 
 
-async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-
-    if not context.args:
-        await update.message.reply_text("Kullanım: /remove siteismi")
-        return
-
-    site = context.args[0].lower()
-
-    # DB'den sil
-    db_remove_sponsor(site)
-
-    # RAM'den sil (ASIL OLAY BU)
-    if site in SPONSOR_CACHE:
-        del SPONSOR_CACHE[site]
-
-    await update.message.reply_text(
-        f"🗑️ **{site.upper()}** kaldırıldı",
-        parse_mode="Markdown"
+def db_remove_sponsor(site):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "DELETE FROM filters WHERE trigger = %s",
+        (site.lower(),)
     )
+    db.commit()
+    cur.close()
+    db.close()
+
+  
 
 
 
@@ -195,9 +172,11 @@ async def is_admin(update, context):
         return False
 
 async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # admin kontrolü
     if not await is_admin(update, context):
         return
 
+    # argüman kontrolü
     if len(context.args) < 2:
         await update.message.reply_text("Kullanım: /filtre site link")
         return
@@ -205,25 +184,23 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     site = context.args[0].lower()
     link = context.args[1]
 
-    # DB
+    # DB'ye ekle / güncelle
     db_add_sponsor(site, link)
 
-    # CACHE
-    SPONSOR_CACHE[site] = link
-
+    # kullanıcıya cevap ver
     await update.message.reply_text(
         f"✅ **{site.upper()}** eklendi",
         parse_mode="Markdown"
     )
 
+   
 
 
 
 
 
 def sponsor_keyboard(page: int):
-    items = list(SPONSOR_CACHE.items())
-
+    items = list(db_get_all_sponsors().items())
 
     start = page * SPONSOR_PER_PAGE
     end = start + SPONSOR_PER_PAGE
@@ -251,6 +228,7 @@ def sponsor_keyboard(page: int):
         buttons.append(nav)
 
     return InlineKeyboardMarkup(buttons)
+
 
 
 # ================= UNMUTE BUTONU =================
@@ -290,21 +268,13 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     site = context.args[0].lower()
-
-    if site not in SPONSOR_CACHE:
-        await update.message.reply_text("❌ Site bulunamadı")
-        return
-
-    # DB
     db_remove_sponsor(site)
-
-    # CACHE
-    del SPONSOR_CACHE[site]
 
     await update.message.reply_text(
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
+
 
 
 
@@ -559,10 +529,20 @@ async def site_kontrol(update, context):
 
     key = update.message.text.lower().strip()
 
-    if key not in SPONSOR_CACHE:
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "SELECT response FROM filters WHERE trigger = %s",
+        (key,)
+    )
+    row = cur.fetchone()
+    cur.close()
+    db.close()
+
+    if not row:
         return
 
-    link = SPONSOR_CACHE[key]
+    link = row["response"]
 
     await update.message.reply_text(
         f"🔗 **{key.upper()}** sitesine gitmek için tıkla",
@@ -571,6 +551,7 @@ async def site_kontrol(update, context):
         ]),
         parse_mode="Markdown"
     )
+
 
 
 
@@ -705,7 +686,8 @@ async def sponsor_page_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not SPONSOR_CACHE:
+    sponsors = db_get_all_sponsors()
+    if not sponsors:
         await update.message.reply_text("Sponsor bulunamadı.")
         return
 
@@ -715,13 +697,6 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-
-
-
-def load_sponsor_cache():
-    global SPONSOR_CACHE
-    SPONSOR_CACHE = db_get_all_sponsors()
-    print("CACHE DOLDU:", len(SPONSOR_CACHE))
 
 
 # ================= APP =================
@@ -801,7 +776,6 @@ app.add_handler(
 # ================= RUN =================
 if __name__ == "__main__":
     print("🔥 BOT AKTİF")
-    load_sponsor_cache()
     app.run_polling(drop_pending_updates=True)
 
 
