@@ -2,6 +2,7 @@
 import os
 import re
 import json
+from database import create_tables
 
 SPONSOR_FILE = "sponsorlar.json"
 
@@ -698,7 +699,9 @@ app.add_handler(
 )
 
 # ================= RUN =================
-print("🔥 BOT AKTİF")
-app.run_polling(drop_pending_updates=True)
+if __name__ == "__main__":
+    print("🔥 BOT AKTİF")
+    create_tables()
+    app.run_polling(drop_pending_updates=True)
 
 
