@@ -501,23 +501,18 @@ async def link_guard(update, context):
 
 # ================= SİTE ADI ALGILAMA =================
 async def site_kontrol(update, context):
-    if update.message.sender_chat:
-        return
-    if not update.message.text:
+    if not update.message or not update.message.text:
         return
 
     key = update.message.text.lower().strip()
-
     sponsors = db_get_all_sponsors()
+
+    print("DEBUG KEY:", key)
+    print("DEBUG SPONSORS COUNT:", len(sponsors))
+
     if key in sponsors:
-        link = sponsors[key]
-        kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton(f"{key.upper()} GİRİŞ", url=link)]
-        ])
         await update.message.reply_text(
-            f"{key.upper()} sitesine gitmek için tıklayın",
-            reply_markup=kb,
-            reply_to_message_id=update.message.message_id
+            f"✅ BULUNDU: {key}\n{ sponsors[key] }"
         )
 
 
