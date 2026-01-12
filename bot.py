@@ -1,22 +1,7 @@
 # bot.py
 import os
 import re
-import json
 from database import create_tables
-
-SPONSOR_FILE = "sponsorlar.json"
-
-def load_sponsorlar():
-    try:
-        with open(SPONSOR_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-
-def save_sponsorlar(data):
-    with open(SPONSOR_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -36,6 +21,37 @@ from telegram.ext import (
     filters
 )
 
+from database import get_db
+
+def db_get_all_sponsors():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT trigger, response FROM filters ORDER BY trigger")
+    rows = cur.fetchall()
+    db.close()
+    return dict(rows)
+
+def db_add_sponsor(site, link):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "INSERT OR REPLACE INTO filters (trigger, response) VALUES (?, ?)",
+        (site.lower(), link)
+    )
+    db.commit()
+    db.close()
+
+def db_remove_sponsor(site):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "DELETE FROM filters WHERE trigger = ?",
+        (site.lower(),)
+    )
+    db.commit()
+    db.close()
+
+
 # ================= ENV =================
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -44,8 +60,6 @@ if not TOKEN:
 
 # ================= LİNK LİSTELERİ =================
 # 🔧 BURAYA AYNI FORMATTA EKLEYEREK ÇOĞALT
-
-SPONSORLAR = load_sponsorlar()
 SPONSOR_PER_PAGE = 20
 
 
@@ -143,8 +157,7 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if link.startswith("http://shoort.in/") or link.startswith("https://shoort.in/"):
         link = link.replace("shoort.in", "shoort.im")
 
-    SPONSORLAR[site] = link
-    save_sponsorlar(SPONSORLAR)
+    db_add_sponsor(site, link)
 
     await update.message.reply_text(
         f"✅ **{site.upper()}** eklendi",
@@ -152,7 +165,8 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 def sponsor_keyboard(page: int):
-    items = list(SPONSORLAR.items())
+    items = list(db_get_all_sponsors().items())
+
 
     start = page * SPONSOR_PER_PAGE
     end = start + SPONSOR_PER_PAGE
@@ -220,17 +234,18 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     site = context.args[0].lower()
 
-    if site not in SPONSORLAR:
+    sponsors = db_get_all_sponsors()
+    if site not in sponsors:
         await update.message.reply_text("❌ Site bulunamadı")
         return
 
-    SPONSORLAR.pop(site)
-    save_sponsorlar(SPONSORLAR)
+    db_remove_sponsor(site)
 
     await update.message.reply_text(
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
+
 
 
 
@@ -475,17 +490,23 @@ async def link_guard(update, context):
 async def site_kontrol(update, context):
     if update.message.sender_chat:
         return
+    if not update.message.text:
+        return
 
     key = update.message.text.lower().strip()
-    if key in SPONSORLAR:
+
+    sponsors = db_get_all_sponsors()
+    if key in sponsors:
+        link = sponsors[key]
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton(f"{key.upper()} GİRİŞ", url=SPONSORLAR[key])]
+            [InlineKeyboardButton(f"{key.upper()} GİRİŞ", url=link)]
         ])
         await update.message.reply_text(
             f"{key.upper()} sitesine gitmek için tıklayın",
             reply_markup=kb,
             reply_to_message_id=update.message.message_id
         )
+
 
 # ================= EVERY / DOĞUM =================
 async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -599,7 +620,8 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.sender_chat:
         return
 
-    if not SPONSORLAR:
+    sponsors = db_get_all_sponsors()
+    if not sponsors:
         await update.message.reply_text("Sponsor bulunamadı.")
         return
 
@@ -608,6 +630,7 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=sponsor_keyboard(0),
         parse_mode="Markdown"
     )
+
 
 async def sponsor_page_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -699,15 +722,9 @@ app.add_handler(
 )
 
 # ================= RUN =================
-import subprocess
-from database import create_tables
-
-print("🔄 JSON → SQLite aktarılıyor...")
-subprocess.run(["python", "json_to_sqlite.py"])
-
-print("🔥 BOT AKTİF")
-create_tables()
-app.run_polling(drop_pending_updates=True)
-
+if __name__ == "__main__":
+    print("🔥 BOT AKTİF")
+    create_tables()
+    app.run_polling(drop_pending_updates=True)
 
 
