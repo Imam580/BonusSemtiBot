@@ -26,11 +26,17 @@ from database import get_db
 def db_get_all_sponsors():
     db = get_db()
     cur = db.cursor()
-    cur.execute("SELECT trigger, response FROM filters ORDER BY trigger")
+    cur.execute("SELECT trigger, response FROM filters")
     rows = cur.fetchall()
     cur.close()
     db.close()
-    return dict(rows)
+
+    sponsors = {}
+    for row in rows:
+        sponsors[row["trigger"]] = row["response"]
+
+    return sponsors
+
 
 
 def db_add_sponsor(site, link):
