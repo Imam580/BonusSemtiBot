@@ -4,6 +4,10 @@ import re
 from datetime import timedelta
 from dotenv import load_dotenv
 
+# ================= CACHE =================
+SPONSOR_CACHE = {}
+
+
 
 from telegram import (
     Update,
@@ -23,10 +27,6 @@ from telegram.ext import (
 
 from database import get_db
 
-# ================= CACHE =================
-SPONSOR_CACHE = {}
-LAST_CACHE_UPDATE = 0
-CACHE_TTL = 30  # saniye
 
 
 def db_get_all_sponsors():
@@ -42,6 +42,21 @@ def db_get_all_sponsors():
         sponsors[row["trigger"]] = row["response"]
 
     return sponsors
+
+def load_sponsor_cache():
+    global SPONSOR_CACHE
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT trigger, response FROM filters")
+    rows = cur.fetchall()
+    cur.close()
+    db.close()
+
+    SPONSOR_CACHE = {row["trigger"]: row["response"] for row in rows}
+
+    print(f"✅ CACHE YÜKLENDİ: {len(SPONSOR_CACHE)} sponsor")
+
 
 
 
@@ -206,7 +221,7 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def sponsor_keyboard(page: int):
-    items = list(get_sponsors_cached().items())
+    items = list(SPONSOR_CACHE.items())
 
 
     start = page * SPONSOR_PER_PAGE
@@ -539,23 +554,20 @@ async def site_kontrol(update, context):
         return
 
     key = update.message.text.lower().strip()
-    sponsors = get_sponsors_cached()
 
-    if key not in sponsors:
+    if key not in SPONSOR_CACHE:
         return
 
-    link = sponsors[key]
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"{key.upper()} GİRİŞ", url=link)]
-    ])
+    link = SPONSOR_CACHE[key]
 
     await update.message.reply_text(
         f"🔗 **{key.upper()}** sitesine gitmek için tıkla",
-        reply_markup=keyboard,
-        parse_mode="Markdown",
-        reply_to_message_id=update.message.message_id
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(f"{key.upper()} GİRİŞ", url=link)]
+        ]),
+        parse_mode="Markdown"
     )
+
 
 
 
@@ -689,11 +701,7 @@ async def sponsor_page_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.sender_chat:
-        return
-
-    sponsors = get_sponsors_cached()
-    if not sponsors:
+    if not SPONSOR_CACHE:
         await update.message.reply_text("Sponsor bulunamadı.")
         return
 
@@ -702,6 +710,7 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=sponsor_keyboard(0),
         parse_mode="Markdown"
     )
+
 
 
 
@@ -784,6 +793,7 @@ app.add_handler(
 # ================= RUN =================
 if __name__ == "__main__":
     print("🔥 BOT AKTİF")
+    load_sponsor_cache()
     app.run_polling(drop_pending_updates=True)
 
 
