@@ -737,9 +737,7 @@ app.add_handler(
 # ================= RUN =================
 if __name__ == "__main__":
     print("🔥 BOT AKTİF")
-    create_tables()
     app.run_polling(drop_pending_updates=True)
-
 
 
 
