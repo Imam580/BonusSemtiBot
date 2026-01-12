@@ -668,20 +668,24 @@ async def unmute(update, context):
 
 
 
-async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.sender_chat:
-        return
+async def sponsor_page_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data  # sponsor:0
+    page = int(data.split(":")[1])
 
     sponsors = db_get_all_sponsors()
     if not sponsors:
-        await update.message.reply_text("Sponsor bulunamadı.")
+        await query.edit_message_text("Sponsor bulunamadı.")
         return
 
-    await update.message.reply_text(
-        "🤝 **Sponsorlarımız (Sayfa 1)**",
-        reply_markup=sponsor_keyboard(0),
+    await query.edit_message_text(
+        f"🤝 **Sponsorlarımız (Sayfa {page + 1})**",
+        reply_markup=sponsor_keyboard(page),
         parse_mode="Markdown"
     )
+
 
 
 async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
