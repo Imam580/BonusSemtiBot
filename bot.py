@@ -27,6 +27,8 @@ from telegram.ext import (
 
 from database import get_db
 
+# ================= CACHE =================
+SPONSOR_CACHE = {}
 
 
 def db_get_all_sponsors():
@@ -172,11 +174,9 @@ async def is_admin(update, context):
         return False
 
 async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # admin kontrolü
     if not await is_admin(update, context):
         return
 
-    # argüman kontrolü
     if len(context.args) < 2:
         await update.message.reply_text("Kullanım: /filtre site link")
         return
@@ -184,14 +184,17 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     site = context.args[0].lower()
     link = context.args[1]
 
-    # DB'ye ekle / güncelle
+    # DB
     db_add_sponsor(site, link)
 
-    # kullanıcıya cevap ver
+    # CACHE
+    SPONSOR_CACHE[site] = link
+
     await update.message.reply_text(
         f"✅ **{site.upper()}** eklendi",
         parse_mode="Markdown"
     )
+
 
    
 
@@ -200,7 +203,7 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def sponsor_keyboard(page: int):
-    items = list(db_get_all_sponsors().items())
+    items = list(SPONSOR_CACHE.items())
 
     start = page * SPONSOR_PER_PAGE
     end = start + SPONSOR_PER_PAGE
@@ -220,14 +223,19 @@ def sponsor_keyboard(page: int):
 
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton("⬅️ Önceki", callback_data=f"sponsor:{page-1}"))
+        nav.append(
+            InlineKeyboardButton("⬅️ Önceki", callback_data=f"sponsor:{page-1}")
+        )
     if end < len(items):
-        nav.append(InlineKeyboardButton("➡️ Sonraki", callback_data=f"sponsor:{page+1}"))
+        nav.append(
+            InlineKeyboardButton("➡️ Sonraki", callback_data=f"sponsor:{page+1}")
+        )
 
     if nav:
         buttons.append(nav)
 
     return InlineKeyboardMarkup(buttons)
+
 
 
 
@@ -268,12 +276,18 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     site = context.args[0].lower()
+
+    # DB
     db_remove_sponsor(site)
+
+    # CACHE
+    SPONSOR_CACHE.pop(site, None)
 
     await update.message.reply_text(
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
+
 
 
 
@@ -529,20 +543,10 @@ async def site_kontrol(update, context):
 
     key = update.message.text.lower().strip()
 
-    db = get_db()
-    cur = db.cursor()
-    cur.execute(
-        "SELECT response FROM filters WHERE trigger = %s",
-        (key,)
-    )
-    row = cur.fetchone()
-    cur.close()
-    db.close()
-
-    if not row:
+    if key not in SPONSOR_CACHE:
         return
 
-    link = row["response"]
+    link = SPONSOR_CACHE[key]
 
     await update.message.reply_text(
         f"🔗 **{key.upper()}** sitesine gitmek için tıkla",
@@ -551,6 +555,7 @@ async def site_kontrol(update, context):
         ]),
         parse_mode="Markdown"
     )
+
 
 
 
@@ -686,8 +691,7 @@ async def sponsor_page_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    sponsors = db_get_all_sponsors()
-    if not sponsors:
+    if not SPONSOR_CACHE:
         await update.message.reply_text("Sponsor bulunamadı.")
         return
 
@@ -696,6 +700,7 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=sponsor_keyboard(0),
         parse_mode="Markdown"
     )
+
 
 
 
@@ -776,7 +781,14 @@ app.add_handler(
 # ================= RUN =================
 if __name__ == "__main__":
     print("🔥 BOT AKTİF")
+
+    # cache doldur
+    global SPONSOR_CACHE
+    SPONSOR_CACHE = db_get_all_sponsors()
+    print("CACHE DOLDU:", len(SPONSOR_CACHE))
+
     app.run_polling(drop_pending_updates=True)
+
 
 
 
