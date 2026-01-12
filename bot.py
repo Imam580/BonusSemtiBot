@@ -1,9 +1,9 @@
 # bot.py
 import os
 import re
-from database import create_tables
 from datetime import timedelta
 from dotenv import load_dotenv
+
 
 from telegram import (
     Update,
@@ -28,27 +28,37 @@ def db_get_all_sponsors():
     cur = db.cursor()
     cur.execute("SELECT trigger, response FROM filters ORDER BY trigger")
     rows = cur.fetchall()
+    cur.close()
     db.close()
     return dict(rows)
+
 
 def db_add_sponsor(site, link):
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "INSERT OR REPLACE INTO filters (trigger, response) VALUES (?, ?)",
+        """
+        INSERT INTO filters (trigger, response)
+        VALUES (%s, %s)
+        ON CONFLICT (trigger)
+        DO UPDATE SET response = EXCLUDED.response
+        """,
         (site.lower(), link)
     )
     db.commit()
+    cur.close()
     db.close()
+
 
 def db_remove_sponsor(site):
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "DELETE FROM filters WHERE trigger = ?",
+        "DELETE FROM filters WHERE trigger = %s",
         (site.lower(),)
     )
     db.commit()
+    cur.close()
     db.close()
 
 
@@ -153,7 +163,6 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     site = context.args[0].lower()
     link = context.args[1]
 
-    # shoort.in → shoort.im
     if link.startswith("http://shoort.in/") or link.startswith("https://shoort.in/"):
         link = link.replace("shoort.in", "shoort.im")
 
@@ -163,6 +172,8 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ **{site.upper()}** eklendi",
         parse_mode="Markdown"
     )
+
+
 
 def sponsor_keyboard(page: int):
     items = list(db_get_all_sponsors().items())
@@ -245,6 +256,8 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
+
+
 
 
 
@@ -726,5 +739,7 @@ if __name__ == "__main__":
     print("🔥 BOT AKTİF")
     create_tables()
     app.run_polling(drop_pending_updates=True)
+
+
 
 
