@@ -87,21 +87,22 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     site = context.args[0].lower()
 
-    sponsors = get_sponsors_cached()
-    if site not in sponsors:
+    # cache'te var mı?
+    if site not in SPONSOR_CACHE:
         await update.message.reply_text("❌ Site bulunamadı")
         return
 
-    # DB'den sil
+    # 1️⃣ DB'den sil
     db_remove_sponsor(site)
 
-    # CACHE'i zorla güncelle
-    get_sponsors_cached(force=True)
+    # 2️⃣ CACHE'ten sil
+    SPONSOR_CACHE.pop(site, None)
 
     await update.message.reply_text(
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
+
 
 
 
