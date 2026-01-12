@@ -782,12 +782,12 @@ app.add_handler(
 if __name__ == "__main__":
     print("🔥 BOT AKTİF")
 
-    # cache doldur
-    global SPONSOR_CACHE
+    # cache doldur (GLOBAL YAZILMAZ)
     SPONSOR_CACHE = db_get_all_sponsors()
     print("CACHE DOLDU:", len(SPONSOR_CACHE))
 
     app.run_polling(drop_pending_updates=True)
+
 
 
 
