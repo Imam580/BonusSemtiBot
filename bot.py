@@ -495,40 +495,23 @@ async def every_kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.lower() != "every":
         return
 
-    mesaj = (
-        "🔥 **BonusSemti Güvencesiyle Sponsorumuz Olan EveryMatrix Altyapılı Siteler**\n\n"
-        "https://shoort.im/hizlicasino\n"
-        "https://shoort.im/egebet\n"
-        "https://shoort.im/kavbet\n"
-        "https://shoort.im/pusulabet\n"
-        "https://shoort.im/hitbet\n"
-        "https://shoort.im/artemisbet\n\n"
-        "⚡ **DİĞER EVERYMATRIX ALTYAPISINDA OLAN SİTELER**\n\n"
-        "https://linkturbo.co/sosyaldavet\n"
-        "http://dub.is/matguncel\n"
-        "http://dub.pro/jojoyagit\n"
-        "https://dub.pro/holiguncel\n"
-        "http://dub.is/betsmoveguncel\n"
-        "http://lunalink.org/lunasosyal/\n"
-        "https://dub.is/megaguncel\n"
-        "https://dub.is/zirveguncel\n"
-        "http://dub.is/odeonguncel\n"
-        "http://dub.is/maviguncel\n"
-        "https://shoort.in/coinbar\n"
-        "https://shoort.in/nakitbahis\n"
-    )
+    kb_sponsor = yatay_butonlar(EVERY_SPONSOR_BUTON, satir=2)
+    kb_diger = yatay_butonlar(EVERY_DIGER_BUTON, satir=2)
 
-    kb1 = yatay_butonlar(EVERY_SPONSOR_BUTON, satir=2)
-    kb2 = yatay_butonlar(EVERY_DIGER_BUTON, satir=2)
-
+    # 1️⃣ Sponsor olanlar
     await update.message.reply_text(
-        mesaj,
-        reply_markup=InlineKeyboardMarkup(
-            kb1.inline_keyboard + kb2.inline_keyboard
-        ),
-        disable_web_page_preview=True,
+        "🔥 **SPONSOR OLAN EVERYMATRIX SİTELERİ**",
+        reply_markup=kb_sponsor,
         parse_mode="Markdown"
     )
+
+    # 2️⃣ Sponsor olmayanlar
+    await update.message.reply_text(
+        "⚡ **SPONSOR OLMAYAN EVERYMATRIX SİTELERİ**",
+        reply_markup=kb_diger,
+        parse_mode="Markdown"
+    )
+
 
 
 async def dogum_kontrol(update, context):
