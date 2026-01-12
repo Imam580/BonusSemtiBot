@@ -77,31 +77,28 @@ def db_add_sponsor(site, link):
     db.close()
 
 
-async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def remove_filter(update, context):
     if not await is_admin(update, context):
         return
 
     if not context.args:
-        await update.message.reply_text("Kullanım: /remove siteismi")
+        await update.message.reply_text("Kullanım: /remove site")
         return
 
     site = context.args[0].lower()
 
-    # cache'te var mı?
     if site not in SPONSOR_CACHE:
-        await update.message.reply_text("❌ Site bulunamadı")
+        await update.message.reply_text("❌ Yok")
         return
 
-    # 1️⃣ DB'den sil
+    # defterden sil
     db_remove_sponsor(site)
 
-    # 2️⃣ CACHE'ten sil
-    SPONSOR_CACHE.pop(site, None)
+    # akıldan sil
+    del SPONSOR_CACHE[site]
 
-    await update.message.reply_text(
-        f"🗑️ **{site.upper()}** kaldırıldı",
-        parse_mode="Markdown"
-    )
+    await update.message.reply_text(f"🗑️ {site} silindi")
+
 
 
 
@@ -201,21 +198,23 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if len(context.args) < 2:
-        await update.message.reply_text("Kullanım: /filtre siteismi link")
+        await update.message.reply_text("Kullanım: /filtre site link")
         return
 
     site = context.args[0].lower()
     link = context.args[1]
 
+    # DB
     db_add_sponsor(site, link)
 
-    # cache'i zorla yenile
-    get_sponsors_cached(force=True)
+    # CACHE
+    SPONSOR_CACHE[site] = link
 
     await update.message.reply_text(
         f"✅ **{site.upper()}** eklendi",
         parse_mode="Markdown"
     )
+
 
 
 
@@ -291,18 +290,21 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     site = context.args[0].lower()
 
-    sponsors = get_sponsors_cached()
-    if site not in sponsors:
+    if site not in SPONSOR_CACHE:
         await update.message.reply_text("❌ Site bulunamadı")
         return
 
+    # DB
     db_remove_sponsor(site)
-    get_sponsors_cached(force=True)
+
+    # CACHE
+    del SPONSOR_CACHE[site]
 
     await update.message.reply_text(
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
+
 
 
 
@@ -715,6 +717,10 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
+def load_sponsor_cache():
+    global SPONSOR_CACHE
+    SPONSOR_CACHE = db_get_all_sponsors()
+    print("CACHE DOLDU:", len(SPONSOR_CACHE))
 
 
 # ================= APP =================
