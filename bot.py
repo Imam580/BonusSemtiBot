@@ -23,6 +23,12 @@ from telegram.ext import (
 
 from database import get_db
 
+# ================= CACHE =================
+SPONSOR_CACHE = {}
+LAST_CACHE_UPDATE = 0
+CACHE_TTL = 30  # saniye
+
+
 def db_get_all_sponsors():
     db = get_db()
     cur = db.cursor()
@@ -56,16 +62,32 @@ def db_add_sponsor(site, link):
     db.close()
 
 
-def db_remove_sponsor(site):
-    db = get_db()
-    cur = db.cursor()
-    cur.execute(
-        "DELETE FROM filters WHERE trigger = %s",
-        (site.lower(),)
+async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    if not context.args:
+        await update.message.reply_text("Kullanım: /remove siteismi")
+        return
+
+    site = context.args[0].lower()
+
+    sponsors = get_sponsors_cached()
+    if site not in sponsors:
+        await update.message.reply_text("❌ Site bulunamadı")
+        return
+
+    # DB'den sil
+    db_remove_sponsor(site)
+
+    # CACHE'i zorla güncelle
+    get_sponsors_cached(force=True)
+
+    await update.message.reply_text(
+        f"🗑️ **{site.upper()}** kaldırıldı",
+        parse_mode="Markdown"
     )
-    db.commit()
-    cur.close()
-    db.close()
+
 
 
 # ================= ENV =================
@@ -169,10 +191,10 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     site = context.args[0].lower()
     link = context.args[1]
 
-    if link.startswith("http://shoort.in/") or link.startswith("https://shoort.in/"):
-        link = link.replace("shoort.in", "shoort.im")
-
     db_add_sponsor(site, link)
+
+    # cache'i zorla yenile
+    get_sponsors_cached(force=True)
 
     await update.message.reply_text(
         f"✅ **{site.upper()}** eklendi",
@@ -181,8 +203,10 @@ async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
+
+
 def sponsor_keyboard(page: int):
-    items = list(db_get_all_sponsors().items())
+    items = list(get_sponsors_cached().items())
 
 
     start = page * SPONSOR_PER_PAGE
@@ -251,17 +275,19 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     site = context.args[0].lower()
 
-    sponsors = db_get_all_sponsors()
+    sponsors = get_sponsors_cached()
     if site not in sponsors:
         await update.message.reply_text("❌ Site bulunamadı")
         return
 
     db_remove_sponsor(site)
+    get_sponsors_cached(force=True)
 
     await update.message.reply_text(
         f"🗑️ **{site.upper()}** kaldırıldı",
         parse_mode="Markdown"
     )
+
 
 
 
@@ -513,7 +539,7 @@ async def site_kontrol(update, context):
         return
 
     key = update.message.text.lower().strip()
-    sponsors = db_get_all_sponsors()
+    sponsors = get_sponsors_cached()
 
     if key not in sponsors:
         return
@@ -530,6 +556,7 @@ async def site_kontrol(update, context):
         parse_mode="Markdown",
         reply_to_message_id=update.message.message_id
     )
+
 
 
 
@@ -657,17 +684,21 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def sponsor_page_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
+async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.sender_chat:
+        return
 
-    page = int(q.data.split(":")[1])
+    sponsors = get_sponsors_cached()
+    if not sponsors:
+        await update.message.reply_text("Sponsor bulunamadı.")
+        return
 
-    await q.edit_message_text(
-        f"🤝 **Sponsorlarımız (Sayfa {page+1})**",
-        reply_markup=sponsor_keyboard(page),
+    await update.message.reply_text(
+        "🤝 **Sponsorlarımız (Sayfa 1)**",
+        reply_markup=sponsor_keyboard(0),
         parse_mode="Markdown"
     )
+
 
 
 
