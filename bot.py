@@ -503,17 +503,28 @@ async def link_guard(update, context):
 async def site_kontrol(update, context):
     if not update.message or not update.message.text:
         return
+    if update.message.sender_chat:
+        return
 
     key = update.message.text.lower().strip()
     sponsors = db_get_all_sponsors()
 
-    print("DEBUG KEY:", key)
-    print("DEBUG SPONSORS COUNT:", len(sponsors))
+    if key not in sponsors:
+        return
 
-    if key in sponsors:
-        await update.message.reply_text(
-            f"✅ BULUNDU: {key}\n{ sponsors[key] }"
-        )
+    link = sponsors[key]
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(f"{key.upper()} GİRİŞ", url=link)]
+    ])
+
+    await update.message.reply_text(
+        f"🔗 **{key.upper()}** sitesine gitmek için tıkla",
+        reply_markup=keyboard,
+        parse_mode="Markdown",
+        reply_to_message_id=update.message.message_id
+    )
+
 
 
 # ================= EVERY / DOĞUM =================
