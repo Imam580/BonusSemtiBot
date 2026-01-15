@@ -833,7 +833,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 📅 SADECE TARİH SORUSU (kupon yoksa)
     if any(k in lower for k in ["günlerden", "ayın kaçı", "tarih"]) and not any(
-        k in lower for k in ["kupon", "maç", "bahis"]
+        k in lower for k in ["kupon", "bahis", "iddaa"]
     ):
         today = get_today()
         gunler = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"]
@@ -844,55 +844,49 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # 🎬 DİZİ / FİLM ÖNERİ
-if any(k in lower for k in ["dizi", "film", "netflix", "amazon", "izleyecek"]):
-    response = ai_client.chat.completions.create(
-        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
-        messages=[
-            {
-                "role": "system",
-                "content": "Kısa, net ve spoiler vermeden dizi/film öner."
-            },
-            {"role": "user", "content": text}
-        ],
-        max_tokens=250
-    )
+    if any(k in lower for k in ["dizi", "film", "netflix", "amazon", "izle"]):
+        response = ai_client.chat.completions.create(
+            model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Kısa, net ve spoiler vermeden dizi/film öner."
+                },
+                {"role": "user", "content": text}
+            ],
+            max_tokens=250
+        )
 
-    await msg.reply_text(response.choices[0].message.content.strip())
-    return
+        await msg.reply_text(response.choices[0].message.content.strip())
+        return
 
+    # 🎯 KUPON MODU (SADECE BAHİS KELİMELERİ)
+    BET_KEYWORDS = ["kupon", "bahis", "iddaa"]
 
-    # 🎯 KUPON MODU
-    if any(k in lower for k in ["kupon", "maç","bahis", "iddaa"]):
+    if any(k in lower for k in BET_KEYWORDS):
 
-        # 👉 KULLANICI NE İSTEDİ?
         want_football = "futbol" in lower
         want_basket = any(k in lower for k in ["basket", "nba"])
 
-        # hiçbir şey söylemediyse → ikisi de
         if not want_football and not want_basket:
             want_football = True
             want_basket = True
 
-        # lig SADECE kullanıcı yazarsa
         league = extract_league(text)
-
-        # bugün dedi mi?
         only_today = "bugün" in lower
 
         matches = []
         used_date = None
-
         max_days = 1 if only_today else 7
 
-        for i in range(0, max_days):
-            check_date = get_utc_date(i)
+        for i in range(max_days):
+            check_date = (get_today() + timedelta(days=i)).strftime("%Y-%m-%d")
             daily = []
 
             if want_football:
                 daily += get_today_football(check_date, league)
 
             if want_basket:
-                # ⚠️ basketbolda lig filtresi SADECE kullanıcı söylediyse
                 daily += get_today_basketball(check_date, league)
 
             if daily:
@@ -935,6 +929,7 @@ if any(k in lower for k in ["dizi", "film", "netflix", "amazon", "izleyecek"]):
     )
 
     await msg.reply_text(response.choices[0].message.content.strip())
+
 
 
 
