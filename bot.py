@@ -661,6 +661,12 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
     if await is_admin(update, context):
         return
 
+    bot_username = os.getenv("BOT_USERNAME")
+
+    # ✅ Bot etiketlenmişse guard çalışmaz
+    if bot_username and f"@{bot_username.lower()}" in msg.text.lower():
+        return
+
     text = msg.text.lower()
 
     mention_count = text.count("@")
@@ -675,14 +681,12 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
         (mention_count >= 1 and has_link) or
         (mention_count >= 1 and has_spam_word)
     ):
-        # 🧹 mesajı sil
         await msg.delete()
-
-        # ⚠️ uyarı
         await context.bot.send_message(
             update.effective_chat.id,
             f"🚫 {msg.from_user.first_name}, @ ile reklam yapmak yasaktır."
         )
+
 
 async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
