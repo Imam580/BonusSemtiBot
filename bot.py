@@ -775,17 +775,13 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     lower = text.lower()
 
-    # 🌦️ HAVA DURUMU
-    if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
-        city = extract_city(text)
-    if not city:
-        await msg.reply_text("Hangi şehir için hava durumunu istiyorsun?")
-        return
+# 🌦️ HAVA DURUMU
+if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
+    city = extract_city(text)
+    weather = get_weather(city)
+    await msg.reply_text(weather)
+    return
 
-weather = get_weather(city)
-
-        await msg.reply_text(weather)
-        return
 
        # 🎯 KUPON MODU
     if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
