@@ -172,21 +172,15 @@ Genel Değerlendirme:
 
 def get_today_football(date=None, league=None):
     url = "https://v3.football.api-sports.io/fixtures"
-    headers = {
-        "x-apisports-key": os.getenv("API_SPORTS_KEY")
-    }
+    headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
 
-    target_date = date or datetime.utcnow().strftime("%Y-%m-%d")
-
-    params = {
-        "date": target_date,
-        "timezone": "UTC"
-    }
+    params = {"timezone": "Europe/Istanbul"}
+    if date:
+        params["date"] = date
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
     data = r.json()
 
-    now = datetime.utcnow()
     matches = []
 
     for item in data.get("response", []):
@@ -194,14 +188,8 @@ def get_today_football(date=None, league=None):
             item["fixture"]["date"].replace("Z", "")
         )
 
-        # ❌ sadece GERÇEKTEN başlamış maçları at
-        if fixture_time <= now:
-            continue
-
         league_name = item["league"]["name"]
-
-        # lig filtresi SADECE kullanıcı yazdıysa
-        if league is not None and league.lower() not in league_name.lower():
+        if league and league.lower() not in league_name.lower():
             continue
 
         home = item["teams"]["home"]["name"]
@@ -217,22 +205,13 @@ def get_today_football(date=None, league=None):
     return matches
 
 
-
-
-
-
 def get_today_basketball(date=None, league=None):
     url = "https://v1.basketball.api-sports.io/games"
-    headers = {
-        "x-apisports-key": os.getenv("API_SPORTS_KEY")
-    }
+    headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
 
-    target_date = date or datetime.utcnow().strftime("%Y-%m-%d")
-
-    params = {
-        "date": target_date,
-        "timezone": "UTC"
-    }
+    params = {"timezone": "Europe/Istanbul"}
+    if date:
+        params["date"] = date
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
     data = r.json()
@@ -245,9 +224,7 @@ def get_today_basketball(date=None, league=None):
         )
 
         league_name = item["league"]["name"]
-
-        # lig filtresi SADECE kullanıcı yazdıysa
-        if league is not None and league.lower() not in league_name.lower():
+        if league and league.lower() not in league_name.lower():
             continue
 
         home = item["teams"]["home"]["name"]
@@ -261,6 +238,7 @@ def get_today_basketball(date=None, league=None):
         )
 
     return games
+
 
 
 
@@ -826,54 +804,36 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 🌦️ HAVA DURUMU
     if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
         city = extract_city(text)
-        weather = get_weather(city)
-        await msg.reply_text(weather)
+        await msg.reply_text(get_weather(city))
         return
 
     # 🎯 KUPON MODU
     if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
 
-        date = extract_date(text) or datetime.now().strftime("%Y-%m-%d")
+        # 🔹 TARİH SADECE KULLANICI YAZARSA
+        date = extract_date(text)
+
+        # 🔹 LİG SADECE KULLANICI YAZARSA
         league = extract_league(text)
 
-        football = get_today_football(date, league)
-        basketball = get_today_basketball(date, league)
+        # 🔹 SPOR TÜRÜ
+        want_football = "basket" not in lower
+        want_basket = "futbol" not in lower
 
-        # Bugün maç yoksa → yarına bak
-        if not football and not basketball:
-            tomorrow = (
-                datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)
-            ).strftime("%Y-%m-%d")
+        football = get_today_football(date, league) if want_football else []
+        basketball = get_today_basketball(date, league) if want_basket else []
 
-            football = get_today_football(tomorrow, league)
-            basketball = get_today_basketball(tomorrow, league)
-
-            if football or basketball:
-                date = tomorrow
-                await msg.reply_text(
-                    "📅 Bugün oynanacak maç yok.\n"
-                    "➡️ Yarınki maçlardan kupon hazırlıyorum."
-                )
-            else:
-                await msg.reply_text(
-                    "❌ Bugün ve yarın için oynanacak maç bulunamadı."
-                )
-                return
-
-        # Spor filtresi
-        if "sadece futbol" in lower:
-            matches = football
-        elif "sadece basket" in lower or "basketbol" in lower:
-            matches = basketball
-        else:
-            matches = football + basketball
+        matches = football + basketball
 
         if not matches:
-            await msg.reply_text("Belirttiğin kriterlerde maç bulunamadı.")
+            await msg.reply_text(
+                "❌ Belirttiğin kriterlerde oynanacak maç bulunamadı.\n"
+                "➡️ Lig veya tarih belirtmeden tekrar dene."
+            )
             return
 
         prompt = (
-            f"Tarih: {date}\n"
+            f"Tarih: {date or 'Farketmez'}\n"
             f"Lig: {league or 'Tümü'}\n\n"
             "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla.\n"
             "Her maçta saat ve tarih yazılsın.\n\n"
