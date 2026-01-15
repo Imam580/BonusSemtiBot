@@ -616,6 +616,52 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
             f"🚫 {msg.from_user.first_name}, @ ile reklam yapmak yasaktır."
         )
 
+async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or not msg.photo:
+        return
+
+    chat_type = update.effective_chat.type
+
+    # Grup → sadece etiketliyse
+    if chat_type in ["group", "supergroup"]:
+        if not msg.caption or not is_bot_mentioned(msg.caption):
+            return
+
+        user_text = re.sub(
+            rf"@{re.escape(os.getenv('BOT_USERNAME'))}",
+            "",
+            msg.caption,
+            flags=re.I
+        ).strip()
+    else:
+        user_text = msg.caption or "Bu kuponu analiz eder misin?"
+
+    photo = msg.photo[-1]
+    file = await context.bot.get_file(photo.file_id)
+    image_url = file.file_path
+
+    try:
+        response = ai_client.chat.completions.create(
+            model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": AI_IMAGE_PROMPT + "\n" + user_text},
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                    ],
+                }
+            ],
+            max_tokens=300
+        )
+
+        await msg.reply_text(response.choices[0].message.content.strip())
+
+    except Exception as e:
+        await msg.reply_text("⚠️ Kuponu analiz edemedim.")
+
+
 async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.text:
