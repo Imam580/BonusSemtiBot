@@ -3,6 +3,8 @@ import os
 import re
 from datetime import timedelta
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
+
 
 
 
@@ -534,7 +536,7 @@ async def link_guard(update, context):
 # ================= GUARD: KANAL ETİKET =================
 MENTION_SPAM_WORDS = [
     "bonus", "kazanç", "bahis", "free",
-    "kazan", "link", "telegram", "grup"
+    "kazan", "link", "telegram", "grup","yaz","gel","herkese",
 ]
 
 async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -542,11 +544,9 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
     if not msg or not msg.text:
         return
 
-    # kanal mesajı / bot mesajı
     if msg.sender_chat:
         return
 
-    # adminler muaf
     if await is_admin(update, context):
         return
 
@@ -559,7 +559,6 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
     has_link = bool(re.search(r"http|t\.me|\.com|\.net|\.org", text))
     has_spam_word = any(w in text for w in MENTION_SPAM_WORDS)
 
-    # 🚨 reklam şartları
     if (
         mention_count >= 2 or
         (mention_count >= 1 and has_link) or
@@ -567,18 +566,21 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
     ):
         uid = msg.from_user.id
 
-        # mesajı sil
+        # 🧹 mesajı sil
         await msg.delete()
 
-        # mute
+        # ⏰ DOĞRU until_date
+        until = datetime.utcnow() + timedelta(hours=1)
+
+        # 🔇 mute
         await context.bot.restrict_chat_member(
-            update.effective_chat.id,
-            uid,
-            ChatPermissions(can_send_messages=False),
-            until_date=timedelta(hours=1)
+            chat_id=update.effective_chat.id,
+            user_id=uid,
+            permissions=ChatPermissions(can_send_messages=False),
+            until_date=until
         )
 
-        # uyarı + buton
+        # ⚠️ uyarı + buton
         await context.bot.send_message(
             update.effective_chat.id,
             f"🚫 {msg.from_user.first_name}, @ ile reklam yasaktır.\n🔇 1 saat mute edildi.",
