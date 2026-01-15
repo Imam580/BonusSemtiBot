@@ -823,9 +823,12 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         lower = text.lower()
 
-    # 📅 TARİH / GÜN SORULARI (AI'YA GİTMEZ)
-    if any(k in lower for k in ["bugün", "ayın kaçı", "tarih", "günlerden"]):
-        today = get_today()
+    # 📅 TARİH / GÜN SORULARI (BUGÜN + YARIN)
+    if any(k in lower for k in ["bugün", "yarın", "ayın kaçı", "tarih", "günlerden"]):
+        if "yarın" in lower:
+            target = get_today() + timedelta(days=1)
+        else:
+            target = get_today()
 
         gunler = [
             "Pazartesi", "Salı", "Çarşamba",
@@ -833,8 +836,8 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
         await msg.reply_text(
-            f"📅 Bugün {today.strftime('%d %B %Y')}\n"
-            f"🗓️ Günlerden {gunler[today.weekday()]}"
+            f"📅 {target.strftime('%d %B %Y')}\n"
+            f"🗓️ Günlerden {gunler[target.weekday()]}"
         )
         return
 
@@ -858,12 +861,21 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         matches = football + basketball
 
+        # 🔁 BUGÜN YOKSA → YARIN DENE
         if not matches:
-            await msg.reply_text(
-                "❌ Belirttiğin kriterlerde oynanacak maç bulunamadı.\n"
-                "➡️ Lig veya tarih belirtmeden tekrar dene."
-            )
-            return
+            tomorrow = (get_today() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+            football = get_today_football(tomorrow, league) if want_football else []
+            basketball = get_today_basketball(tomorrow, league) if want_basket else []
+            matches = football + basketball
+
+            if not matches:
+                await msg.reply_text(
+                    "❌ Bugün ve yarın için uygun maç bulunamadı."
+                )
+                return
+
+            date = tomorrow
 
         prompt = (
             f"Tarih: {date or 'Farketmez'}\n"
@@ -989,9 +1001,6 @@ def extract_city(text: str) -> str | None:
 
 
 def extract_date(text: str) -> str | None:
-    """
-    bugün, yarın, 16 ocak, 3 mart gibi ifadeleri tarihe çevirir
-    """
     text = text.lower()
 
     if "bugün" in text:
