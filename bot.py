@@ -905,6 +905,7 @@ if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
 
 
 
+
 # ================= SİTE ADI ALGILAMA =================
 async def site_kontrol(update, context):
     if not update.message or not update.message.text:
