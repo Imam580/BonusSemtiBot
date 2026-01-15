@@ -2,6 +2,8 @@
 from openai import OpenAI
 import os
 import re
+import requests
+import time
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -151,6 +153,49 @@ KESİNLİKLE:
 - “Bahis garanti değildir”
 gibi klişe cümleler yazma.
 """
+
+def get_today_football():
+    url = "https://v3.football.api-sports.io/fixtures"
+    headers = {
+        "x-apisports-key": os.getenv("API_SPORTS_KEY")
+    }
+    params = {
+        "date": time.strftime("%Y-%m-%d")
+    }
+
+    r = requests.get(url, headers=headers, params=params, timeout=10)
+    data = r.json()
+
+    matches = []
+    for item in data.get("response", []):
+        home = item["teams"]["home"]["name"]
+        away = item["teams"]["away"]["name"]
+        league = item["league"]["name"]
+        matches.append(f"{home} - {away} ({league})")
+
+    return matches
+
+def get_today_basketball():
+    url = "https://v1.basketball.api-sports.io/games"
+    headers = {
+        "x-apisports-key": os.getenv("API_SPORTS_KEY")
+    }
+    params = {
+        "date": time.strftime("%Y-%m-%d")
+    }
+
+    r = requests.get(url, headers=headers, params=params, timeout=10)
+    data = r.json()
+
+    games = []
+    for item in data.get("response", []):
+        home = item["teams"]["home"]["name"]
+        away = item["teams"]["away"]["name"]
+        league = item["league"]["name"]
+        games.append(f"{home} - {away} ({league})")
+
+    return games
+
 
 
 
@@ -706,10 +751,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Grup → sadece etiketliyse
     if chat_type in ["group", "supergroup"]:
-        if not bot_username:
-            return
-
-        if f"@{bot_username.lower()}" not in text.lower():
+        if not bot_username or f"@{bot_username.lower()}" not in text.lower():
             return
 
         text = re.sub(
@@ -719,29 +761,48 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             flags=re.I
         ).strip()
 
-        if not text:
-            return
+    # BUGÜNÜN GERÇEK MAÇLARINI ÇEK
+    football_matches = get_today_football()
+    basketball_matches = get_today_basketball()
 
-    # özel tetikleyiciler AI'ye gitmesin
-    lower_text = text.lower()
-    if lower_text in ["every", "doğum"] or lower_text in SPONSOR_CACHE:
+    if not football_matches and not basketball_matches:
+        await msg.reply_text("⚠️ Bugün için maç verisi bulunamadı.")
         return
+
+    prompt = f"""
+BUGÜNÜN GERÇEK MAÇLARI:
+
+FUTBOL:
+{chr(10).join(football_matches[:15])}
+
+BASKETBOL:
+{chr(10).join(basketball_matches[:15])}
+
+KURALLAR:
+- SADECE yukarıdaki maçlardan kupon yap
+- Takım uydurma
+- 2–4 maç seç
+- Futbol + basketbol karışık olabilir
+- Her maç için market ve tahmini oran yaz
+- Kısa ve net yaz
+"""
 
     try:
         response = ai_client.chat.completions.create(
             model=os.getenv("AI_MODEL", "gpt-4o-mini"),
             messages=[
                 {"role": "system", "content": AI_SYSTEM_PROMPT},
-                {"role": "user", "content": text}
+                {"role": "user", "content": prompt}
             ],
-            max_tokens=350
+            max_tokens=400
         )
 
         await msg.reply_text(response.choices[0].message.content.strip())
 
     except Exception as e:
-        print("AI TEXT ERROR:", e)
-        await msg.reply_text("⚠️ Şu anda cevap veremiyorum.")
+        print("AI ERROR:", e)
+        await msg.reply_text("⚠️ Kupon oluşturulamadı.")
+
 
 
 
