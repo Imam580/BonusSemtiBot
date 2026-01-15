@@ -179,13 +179,14 @@ def get_today_football(date=None, league=None):
     target_date = date or datetime.now().strftime("%Y-%m-%d")
 
     params = {
-        "date": target_date
+        "date": target_date,
+        "timezone": "Europe/Istanbul"
     }
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
     data = r.json()
 
-    now_utc = datetime.utcnow()
+    now = datetime.now()
     matches = []
 
     for item in data.get("response", []):
@@ -193,13 +194,11 @@ def get_today_football(date=None, league=None):
             item["fixture"]["date"].replace("Z", "")
         )
 
-        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇ
-        if fixture_time <= now_utc:
+        # ❌ başlamış maç
+        if fixture_time <= now:
             continue
 
         league_name = item["league"]["name"]
-
-        # ⛔ LİG FİLTRESİ
         if league and league.lower() not in league_name.lower():
             continue
 
@@ -217,6 +216,7 @@ def get_today_football(date=None, league=None):
 
 
 
+
 def get_today_basketball(date=None, league=None):
     url = "https://v1.basketball.api-sports.io/games"
     headers = {
@@ -226,13 +226,14 @@ def get_today_basketball(date=None, league=None):
     target_date = date or datetime.now().strftime("%Y-%m-%d")
 
     params = {
-        "date": target_date
+        "date": target_date,
+        "timezone": "Europe/Istanbul"
     }
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
     data = r.json()
 
-    now_utc = datetime.utcnow()
+    now = datetime.now()
     games = []
 
     for item in data.get("response", []):
@@ -240,13 +241,11 @@ def get_today_basketball(date=None, league=None):
             item["date"].replace("Z", "")
         )
 
-        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇ
-        if game_time <= now_utc:
+        # ❌ başlamış maç
+        if game_time <= now:
             continue
 
         league_name = item["league"]["name"]
-
-        # ⛔ LİG FİLTRESİ
         if league and league.lower() not in league_name.lower():
             continue
 
@@ -261,6 +260,7 @@ def get_today_basketball(date=None, league=None):
         )
 
     return games
+
 
 
 
