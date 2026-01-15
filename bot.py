@@ -645,19 +645,27 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     chat_type = update.effective_chat.type
+    bot_username = os.getenv("BOT_USERNAME")
 
     # Grup → sadece etiketliyse
     if chat_type in ["group", "supergroup"]:
-        if not msg.caption or not is_bot_mentioned(msg.caption):
+        if not msg.caption or not bot_username:
+            return
+
+        if f"@{bot_username.lower()}" not in msg.caption.lower():
             return
 
         user_text = re.sub(
-            rf"@{re.escape(os.getenv('BOT_USERNAME'))}",
+            rf"@{re.escape(bot_username)}",
             "",
             msg.caption,
             flags=re.I
         ).strip()
+
+        if not user_text:
+            user_text = "Bu kuponu analiz eder misin?"
     else:
+        # DM
         user_text = msg.caption or "Bu kuponu analiz eder misin?"
 
     photo = msg.photo[-1]
@@ -676,13 +684,15 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     ],
                 }
             ],
-            max_tokens=300
+            max_tokens=350
         )
 
         await msg.reply_text(response.choices[0].message.content.strip())
 
     except Exception as e:
+        print("AI IMAGE ERROR:", e)
         await msg.reply_text("⚠️ Kuponu analiz edemedim.")
+
 
 
 async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -691,15 +701,19 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     chat_type = update.effective_chat.type
+    bot_username = os.getenv("BOT_USERNAME")
     text = msg.text.strip()
 
     # Grup → sadece etiketliyse
     if chat_type in ["group", "supergroup"]:
-        if not is_bot_mentioned(text):
+        if not bot_username:
+            return
+
+        if f"@{bot_username.lower()}" not in text.lower():
             return
 
         text = re.sub(
-            rf"@{re.escape(os.getenv('BOT_USERNAME'))}",
+            rf"@{re.escape(bot_username)}",
             "",
             text,
             flags=re.I
@@ -725,8 +739,10 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await msg.reply_text(response.choices[0].message.content.strip())
 
-    except Exception:
+    except Exception as e:
+        print("AI TEXT ERROR:", e)
         await msg.reply_text("⚠️ Şu anda cevap veremiyorum.")
+
 
 
 
