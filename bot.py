@@ -170,47 +170,52 @@ Genel Değerlendirme:
 """
 
 
-def get_today_football():
-    url = "https://v3.football.api-sports.io/fixtures"
-    headers = {
-        "x-apisports-key": os.getenv("API_SPORTS_KEY")
-    }
-    params = {
-        "date": time.strftime("%Y-%m-%d")
-    }
+def get_today_football(date: str | None = None, league_filter: str | None = None):
+    try:
+        url = "https://v3.football.api-sports.io/fixtures"
+        headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
+        params = {"date": date or datetime.now().strftime("%Y-%m-%d")}
 
-    r = requests.get(url, headers=headers, params=params, timeout=10)
-    data = r.json()
+        r = requests.get(url, headers=headers, params=params, timeout=10)
+        data = r.json()
 
-    matches = []
-    for item in data.get("response", []):
-        home = item["teams"]["home"]["name"]
-        away = item["teams"]["away"]["name"]
-        league = item["league"]["name"]
-        matches.append(f"{home} - {away} ({league})")
+        matches = []
+        for item in data.get("response", []):
+            league = item["league"]["name"]
+            if league_filter and league_filter.lower() not in league.lower():
+                continue
 
-    return matches
+            home = item["teams"]["home"]["name"]
+            away = item["teams"]["away"]["name"]
+            matches.append(f"{home} - {away} ({league})")
 
-def get_today_basketball():
-    url = "https://v1.basketball.api-sports.io/games"
-    headers = {
-        "x-apisports-key": os.getenv("API_SPORTS_KEY")
-    }
-    params = {
-        "date": time.strftime("%Y-%m-%d")
-    }
+        return matches
+    except:
+        return []
 
-    r = requests.get(url, headers=headers, params=params, timeout=10)
-    data = r.json()
 
-    games = []
-    for item in data.get("response", []):
-        home = item["teams"]["home"]["name"]
-        away = item["teams"]["away"]["name"]
-        league = item["league"]["name"]
-        games.append(f"{home} - {away} ({league})")
+def get_today_basketball(date: str | None = None, league_filter: str | None = None):
+    try:
+        url = "https://v1.basketball.api-sports.io/games"
+        headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
+        params = {"date": date or datetime.now().strftime("%Y-%m-%d")}
 
-    return games
+        r = requests.get(url, headers=headers, params=params, timeout=10)
+        data = r.json()
+
+        games = []
+        for item in data.get("response", []):
+            league = item["league"]["name"]
+            if league_filter and league_filter.lower() not in league.lower():
+                continue
+
+            home = item["teams"]["home"]["name"]
+            away = item["teams"]["away"]["name"]
+            games.append(f"{home} - {away} ({league})")
+
+        return games
+    except:
+        return []
 
 
 
@@ -764,45 +769,56 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_type in ["group", "supergroup"]:
         if not bot_username or f"@{bot_username.lower()}" not in text.lower():
             return
-
         text = re.sub(rf"@{re.escape(bot_username)}", "", text, flags=re.I).strip()
         if not text:
             return
 
     lower = text.lower()
 
-        # 🌦️ HAVA DURUMU
+    # 🌦️ HAVA DURUMU
     if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
         city = extract_city(text)
         weather = get_weather(city)
         await msg.reply_text(weather)
         return
 
-
-
-       # 🔹 KUPON İSTİYOR MU?
+       # 🎯 KUPON MODU
     if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
 
-        football = get_today_football()
-        basketball = get_today_basketball()
+        date = extract_date(text)
+        league = extract_league(text)
 
-        matches = football + basketball
+        football = get_today_football(date, league)
+        basketball = get_today_basketball(date, league)
+
+        if "sadece futbol" in lower:
+            matches = football
+        elif "sadece basket" in lower or "basketbol" in lower:
+            matches = basketball
+        else:
+            matches = football + basketball
 
         if not matches:
-            await msg.reply_text("Bugün için uygun maç bulamadım.")
+            await msg.reply_text("Belirttiğin tarih / lig için maç bulunamadı.")
             return
 
         prompt = (
-            "Bugünün maçları aşağıda.\n"
-            "SADECE bu maçları kullanarak 2–4 maçlı bir kupon hazırla.\n"
-            "Futbol ve basketbol karışık olabilir.\n\n"
+            f"Tarih: {date or 'Bugün'}\n"
+            f"Lig filtresi: {league or 'Yok'}\n\n"
+            "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla.\n\n"
             + "\n".join(matches)
         )
 
         response = ai_client.chat.completions.create(
             model=os.getenv("AI_MODEL", "gpt-4o-mini"),
             messages=[
-                {"role": "system", "content": AI_SYSTEM_PROMPT},
+                {
+                    "role": "system",
+                    "content": AI_SYSTEM_PROMPT.replace(
+                        "{current_date}",
+                        datetime.now().strftime("%d %B %Y")
+                    )
+                },
                 {"role": "user", "content": prompt}
             ],
             max_tokens=400
@@ -810,6 +826,19 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await msg.reply_text(response.choices[0].message.content.strip())
         return
+
+
+    # 🤖 NORMAL YAPAY ZEKA (ÇOK ÖNEMLİ)
+    response = ai_client.chat.completions.create(
+        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+        messages=[
+            {"role": "system", "content": AI_SYSTEM_PROMPT},
+            {"role": "user", "content": text}
+        ],
+        max_tokens=300
+    )
+
+    await msg.reply_text(response.choices[0].message.content.strip())
 
 
 
@@ -885,6 +914,117 @@ def extract_city(text: str) -> str:
             return c.capitalize()
 
     return "Ankara"  # şehir yazmazsa default
+
+def extract_date(text: str) -> str | None:
+    """
+    bugün, yarın, 16 ocak, 3 mart gibi ifadeleri tarihe çevirir
+    """
+    text = text.lower()
+
+    if "bugün" in text:
+        return datetime.now().strftime("%Y-%m-%d")
+
+    if "yarın" in text:
+        return (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    aylar = {
+        "ocak": 1, "şubat": 2, "mart": 3, "nisan": 4,
+        "mayıs": 5, "haziran": 6, "temmuz": 7, "ağustos": 8,
+        "eylül": 9, "ekim": 10, "kasım": 11, "aralık": 12,
+    }
+
+    for ay, ay_no in aylar.items():
+        if ay in text:
+            try:
+                gun = int(re.search(r"\d{1,2}", text).group())
+                return datetime(datetime.now().year, ay_no, gun).strftime("%Y-%m-%d")
+            except:
+                pass
+
+    return None
+
+
+def extract_league(text: str) -> str | None:
+    """
+    FUTBOL + BASKETBOL LİG FİLTRESİ
+    """
+    leagues = {
+        # 🇹🇷 TÜRKİYE
+        "süper lig": "Super Lig",
+        "1. lig": "1. Lig",
+        "tff 1": "1. Lig",
+        "2. lig": "2. Lig",
+        "3. lig": "3. Lig",
+
+        # 🇬🇧 İNGİLTERE
+        "premier": "Premier League",
+        "premier lig": "Premier League",
+        "championship": "Championship",
+        "league one": "League One",
+        "league two": "League Two",
+
+        # 🇪🇸 İSPANYA
+        "laliga": "La Liga",
+        "la liga": "La Liga",
+        "segunda": "La Liga 2",
+
+        # 🇮🇹 İTALYA
+        "serie a": "Serie A",
+        "serie b": "Serie B",
+
+        # 🇩🇪 ALMANYA
+        "bundesliga": "Bundesliga",
+        "2. bundesliga": "2. Bundesliga",
+
+        # 🇫🇷 FRANSA
+        "ligue 1": "Ligue 1",
+        "ligue 2": "Ligue 2",
+
+        # 🇳🇱 HOLLANDA
+        "eredivisie": "Eredivisie",
+
+        # 🇵🇹 PORTEKİZ
+        "primeira": "Primeira Liga",
+
+        # 🇧🇪 BELÇİKA
+        "belçika": "Pro League",
+
+        # 🌍 AVRUPA
+        "şampiyonlar ligi": "UEFA Champions League",
+        "champions league": "UEFA Champions League",
+        "avrupa ligi": "UEFA Europa League",
+        "conference": "UEFA Europa Conference League",
+
+        # 🏀 BASKETBOL – ABD
+        "nba": "NBA",
+        "wnba": "WNBA",
+        "g league": "NBA G League",
+
+        # 🏀 AVRUPA BASKET
+        "euroleague": "Euroleague",
+        "euroliga": "Euroleague",
+        "eurocup": "Eurocup",
+        "basketbol süper ligi": "BSL",
+        "türkiye basketbol": "BSL",
+
+        # 🇪🇸 🇮🇹 🇫🇷 🇩🇪 BASKET
+        "acb": "Liga ACB",
+        "lega basket": "Lega Basket Serie A",
+        "lnb": "LNB Pro A",
+        "bbundesliga": "BBL",
+
+        # 🌍 DİĞER
+        "aba": "ABA League",
+        "vtb": "VTB United League",
+    }
+
+    text = text.lower()
+    for key, api_name in leagues.items():
+        if key in text:
+            return api_name
+
+    return None
+
 
 
 
