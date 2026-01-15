@@ -174,70 +174,79 @@ def get_today_football(date=None, league=None):
     url = "https://v3.football.api-sports.io/fixtures"
     headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
 
-    params = {"timezone": "Europe/Istanbul"}
-    if date:
-        params["date"] = date
-
-    r = requests.get(url, headers=headers, params=params, timeout=10)
-    data = r.json()
-
+    dates = [date] if date else get_date_range()
     matches = []
 
-    for item in data.get("response", []):
-        fixture_time = datetime.fromisoformat(
-            item["fixture"]["date"].replace("Z", "")
-        )
+    for d in dates:
+        params = {
+            "date": d,
+            "timezone": "Europe/Istanbul"
+        }
 
-        league_name = item["league"]["name"]
-        if league and league.lower() not in league_name.lower():
-            continue
+        r = requests.get(url, headers=headers, params=params, timeout=10)
+        data = r.json()
 
-        home = item["teams"]["home"]["name"]
-        away = item["teams"]["away"]["name"]
+        for item in data.get("response", []):
+            league_name = item["league"]["name"]
+            if league and league.lower() not in league_name.lower():
+                continue
 
-        tarih = fixture_time.strftime("%d.%m.%Y")
-        saat = fixture_time.strftime("%H:%M")
+            home = item["teams"]["home"]["name"]
+            away = item["teams"]["away"]["name"]
 
-        matches.append(
-            f"{home} - {away} ({league_name}) | 📅 {tarih} ⏰ {saat}"
-        )
+            t = datetime.fromisoformat(
+                item["fixture"]["date"].replace("Z", "")
+            )
+
+            matches.append(
+                f"{home} - {away} ({league_name}) | 📅 {t.strftime('%d.%m.%Y')} ⏰ {t.strftime('%H:%M')}"
+            )
 
     return matches
+
 
 
 def get_today_basketball(date=None, league=None):
     url = "https://v1.basketball.api-sports.io/games"
     headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
 
-    params = {"timezone": "Europe/Istanbul"}
-    if date:
-        params["date"] = date
-
-    r = requests.get(url, headers=headers, params=params, timeout=10)
-    data = r.json()
-
+    dates = [date] if date else get_date_range()
     games = []
 
-    for item in data.get("response", []):
-        game_time = datetime.fromisoformat(
-            item["date"].replace("Z", "")
-        )
+    for d in dates:
+        params = {
+            "date": d,
+            "timezone": "Europe/Istanbul"
+        }
 
-        league_name = item["league"]["name"]
-        if league and league.lower() not in league_name.lower():
-            continue
+        r = requests.get(url, headers=headers, params=params, timeout=10)
+        data = r.json()
 
-        home = item["teams"]["home"]["name"]
-        away = item["teams"]["away"]["name"]
+        for item in data.get("response", []):
+            league_name = item["league"]["name"]
+            if league and league.lower() not in league_name.lower():
+                continue
 
-        tarih = game_time.strftime("%d.%m.%Y")
-        saat = game_time.strftime("%H:%M")
+            home = item["teams"]["home"]["name"]
+            away = item["teams"]["away"]["name"]
 
-        games.append(
-            f"{home} - {away} ({league_name}) | 📅 {tarih} ⏰ {saat}"
-        )
+            t = datetime.fromisoformat(item["date"].replace("Z", ""))
+
+            games.append(
+                f"{home} - {away} ({league_name}) | 📅 {t.strftime('%d.%m.%Y')} ⏰ {t.strftime('%H:%M')}"
+            )
 
     return games
+
+
+def get_date_range():
+    today = datetime.now().date()
+    return [
+        today.strftime("%Y-%m-%d"),
+        (today + timedelta(days=1)).strftime("%Y-%m-%d"),
+        (today + timedelta(days=2)).strftime("%Y-%m-%d"),
+    ]
+
 
 
 
