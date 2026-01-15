@@ -806,6 +806,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_type = update.effective_chat.type
     bot_username = os.getenv("BOT_USERNAME")
+
     text = msg.text.strip()
     lower = text.lower()
 
@@ -818,57 +819,57 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         lower = text.lower()
 
-    # 📅 TARİH / GÜN
-    if any(k in lower for k in ["bugün", "yarın", "ayın kaçı", "tarih", "günlerden"]):
-        target = get_today() + timedelta(days=1) if "yarın" in lower else get_today()
+    # 📅 SADECE TARİH SORUSU (kupon YOKSA)
+    if any(k in lower for k in ["günlerden", "ayın kaçı", "tarih"]) and "kupon" not in lower and "maç" not in lower:
+        today = get_today()
         gunler = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"]
         await msg.reply_text(
-            f"📅 {target.strftime('%d %B %Y')}\n"
-            f"🗓️ Günlerden {gunler[target.weekday()]}"
+            f"📅 {today.strftime('%d %B %Y')}\n"
+            f"🗓️ Günlerden {gunler[today.weekday()]}"
         )
         return
 
-    # 🎯 KUPON MODU (NBA FIX DAHİL)
-    if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç", "nba"]):
+    # 🎯 KUPON MODU
+    if any(k in lower for k in ["kupon", "maç", "öner", "iddaa", "bahis"]):
 
-        # tarih yoksa → BUGÜN
-        date = extract_date(text) or get_today().strftime("%Y-%m-%d")
         league = extract_league(text)
 
-        # 🏀 NBA özel mantık
-        if "nba" in lower:
-            football = []
-            basketball = get_today_basketball(date, None)
-        else:
-            want_football = "basket" not in lower
-            want_basket = "futbol" not in lower
+        want_basket = any(k in lower for k in ["basket", "nba"])
+        want_football = "futbol" in lower or not want_basket
 
-            football = get_today_football(date, league) if want_football else []
-            basketball = get_today_basketball(date, league) if want_basket else []
+        only_today = "bugün" in lower
 
-        matches = football + basketball
+        matches = []
+        used_date = None
 
-        # bugün yoksa → yarın
+        # 📅 TARİH TARAMA
+        max_days = 1 if only_today else 7
+
+        for i in range(0, max_days):
+            check_date = (get_today() + timedelta(days=i)).strftime("%Y-%m-%d")
+
+            daily_matches = []
+
+            if want_football:
+                daily_matches += get_today_football(check_date, league)
+
+            if want_basket:
+                daily_matches += get_today_basketball(check_date, league)
+
+            if daily_matches:
+                matches = daily_matches
+                used_date = check_date
+                break
+
         if not matches:
-            tomorrow = (get_today() + timedelta(days=1)).strftime("%Y-%m-%d")
-
-            if "nba" in lower:
-                matches = get_today_basketball(tomorrow, None)
-            else:
-                football = get_today_football(tomorrow, league) if want_football else []
-                basketball = get_today_basketball(tomorrow, league) if want_basket else []
-                matches = football + basketball
-
-            if not matches:
-                await msg.reply_text("❌ Bugün ve yarın için uygun maç bulunamadı.")
-                return
-
-            date = tomorrow
+            await msg.reply_text("❌ Önümüzdeki günlerde uygun maç bulunamadı.")
+            return
 
         prompt = (
-            f"Tarih: {date}\n"
+            f"Tarih: {used_date}\n"
             f"Lig: {league or 'Tümü'}\n\n"
-            "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla:\n\n"
+            "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla.\n"
+            "Her maçta saat ve tarih yaz.\n\n"
             + "\n".join(matches)
         )
 
@@ -883,6 +884,19 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await msg.reply_text(response.choices[0].message.content.strip())
         return
+
+    # 🤖 NORMAL SOHBET
+    response = ai_client.chat.completions.create(
+        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+        messages=[
+            {"role": "system", "content": AI_SYSTEM_PROMPT},
+            {"role": "user", "content": text}
+        ],
+        max_tokens=300
+    )
+
+    await msg.reply_text(response.choices[0].message.content.strip())
+
 
 
 
