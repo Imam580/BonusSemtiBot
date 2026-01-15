@@ -176,17 +176,17 @@ def get_today_football(date=None, league=None):
         "x-apisports-key": os.getenv("API_SPORTS_KEY")
     }
 
-    target_date = date or datetime.now().strftime("%Y-%m-%d")
+    target_date = date or datetime.utcnow().strftime("%Y-%m-%d")
 
     params = {
         "date": target_date,
-        "timezone": "Europe/Istanbul"
+        "timezone": "UTC"
     }
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
     data = r.json()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     matches = []
 
     for item in data.get("response", []):
@@ -194,16 +194,15 @@ def get_today_football(date=None, league=None):
             item["fixture"]["date"].replace("Z", "")
         )
 
-        # ❌ sadece başlamış maçları at
+        # ❌ sadece GERÇEKTEN başlamış maçları at
         if fixture_time <= now:
             continue
 
         league_name = item["league"]["name"]
 
-        # ✅ LİG FİLTRESİ SADECE VARSA
-        if league is not None:
-            if league.lower() not in league_name.lower():
-                continue
+        # lig filtresi SADECE kullanıcı yazdıysa
+        if league is not None and league.lower() not in league_name.lower():
+            continue
 
         home = item["teams"]["home"]["name"]
         away = item["teams"]["away"]["name"]
@@ -221,17 +220,18 @@ def get_today_football(date=None, league=None):
 
 
 
+
 def get_today_basketball(date=None, league=None):
     url = "https://v1.basketball.api-sports.io/games"
     headers = {
         "x-apisports-key": os.getenv("API_SPORTS_KEY")
     }
 
-    target_date = date or datetime.now().strftime("%Y-%m-%d")
+    target_date = date or datetime.utcnow().strftime("%Y-%m-%d")
 
     params = {
         "date": target_date,
-        "timezone": "Europe/Istanbul"
+        "timezone": "UTC"
     }
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
@@ -246,10 +246,9 @@ def get_today_basketball(date=None, league=None):
 
         league_name = item["league"]["name"]
 
-        # ✅ LİG FİLTRESİ SADECE VARSA
-        if league is not None:
-            if league.lower() not in league_name.lower():
-                continue
+        # lig filtresi SADECE kullanıcı yazdıysa
+        if league is not None and league.lower() not in league_name.lower():
+            continue
 
         home = item["teams"]["home"]["name"]
         away = item["teams"]["away"]["name"]
