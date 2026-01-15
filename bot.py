@@ -819,8 +819,10 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         lower = text.lower()
 
-    # 📅 SADECE TARİH SORUSU (kupon YOKSA)
-    if any(k in lower for k in ["günlerden", "ayın kaçı", "tarih"]) and "kupon" not in lower and "maç" not in lower:
+    # 📅 SADECE TARİH SORUSU (kupon yoksa)
+    if any(k in lower for k in ["günlerden", "ayın kaçı", "tarih"]) and not any(
+        k in lower for k in ["kupon", "maç", "bahis"]
+    ):
         today = get_today()
         gunler = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"]
         await msg.reply_text(
@@ -830,34 +832,41 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # 🎯 KUPON MODU
-    if any(k in lower for k in ["kupon", "maç", "öner", "iddaa", "bahis"]):
+    if any(k in lower for k in ["kupon", "maç", "öner", "bahis", "iddaa"]):
 
+        # 👉 KULLANICI NE İSTEDİ?
+        want_football = "futbol" in lower
+        want_basket = any(k in lower for k in ["basket", "nba"])
+
+        # hiçbir şey söylemediyse → ikisi de
+        if not want_football and not want_basket:
+            want_football = True
+            want_basket = True
+
+        # lig SADECE kullanıcı yazarsa
         league = extract_league(text)
 
-        want_basket = any(k in lower for k in ["basket", "nba"])
-        want_football = "futbol" in lower or not want_basket
-
+        # bugün dedi mi?
         only_today = "bugün" in lower
 
         matches = []
         used_date = None
 
-        # 📅 TARİH TARAMA
         max_days = 1 if only_today else 7
 
         for i in range(0, max_days):
             check_date = (get_today() + timedelta(days=i)).strftime("%Y-%m-%d")
-
-            daily_matches = []
+            daily = []
 
             if want_football:
-                daily_matches += get_today_football(check_date, league)
+                daily += get_today_football(check_date, league)
 
             if want_basket:
-                daily_matches += get_today_basketball(check_date, league)
+                # ⚠️ basketbolda lig filtresi SADECE kullanıcı söylediyse
+                daily += get_today_basketball(check_date, league)
 
-            if daily_matches:
-                matches = daily_matches
+            if daily:
+                matches = daily
                 used_date = check_date
                 break
 
@@ -896,6 +905,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await msg.reply_text(response.choices[0].message.content.strip())
+
 
 
 
