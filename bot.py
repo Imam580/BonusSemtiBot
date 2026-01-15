@@ -170,52 +170,87 @@ Genel Değerlendirme:
 """
 
 
-def get_today_football(date: str | None = None, league_filter: str | None = None):
-    try:
-        url = "https://v3.football.api-sports.io/fixtures"
-        headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
-        params = {"date": date or datetime.now().strftime("%Y-%m-%d")}
+def get_today_football(date=None, league=None):
+    url = "https://v3.football.api-sports.io/fixtures"
+    headers = {
+        "x-apisports-key": os.getenv("API_SPORTS_KEY")
+    }
 
-        r = requests.get(url, headers=headers, params=params, timeout=10)
-        data = r.json()
+    params = {
+        "date": date or datetime.now().strftime("%Y-%m-%d")
+    }
 
-        matches = []
-        for item in data.get("response", []):
-            league = item["league"]["name"]
-            if league_filter and league_filter.lower() not in league.lower():
-                continue
+    r = requests.get(url, headers=headers, params=params, timeout=10)
+    data = r.json()
 
-            home = item["teams"]["home"]["name"]
-            away = item["teams"]["away"]["name"]
-            matches.append(f"{home} - {away} ({league})")
+    now_utc = datetime.utcnow()
+    matches = []
 
-        return matches
-    except:
-        return []
+    for item in data.get("response", []):
+        fixture_time = datetime.fromisoformat(
+            item["fixture"]["date"].replace("Z", "")
+        )
+
+        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇLARI ELE
+        if fixture_time <= now_utc:
+            continue
+
+        league_name = item["league"]["name"]
+
+        # ⛔ LİG FİLTRESİ
+        if league and league.lower() not in league_name.lower():
+            continue
+
+        home = item["teams"]["home"]["name"]
+        away = item["teams"]["away"]["name"]
+
+        kickoff = fixture_time.strftime("%H:%M")
+
+        matches.append(f"{home} - {away} ({league_name}) ⏰ {kickoff}")
+
+    return matches
 
 
-def get_today_basketball(date: str | None = None, league_filter: str | None = None):
-    try:
-        url = "https://v1.basketball.api-sports.io/games"
-        headers = {"x-apisports-key": os.getenv("API_SPORTS_KEY")}
-        params = {"date": date or datetime.now().strftime("%Y-%m-%d")}
+def get_today_basketball(date=None, league=None):
+    url = "https://v1.basketball.api-sports.io/games"
+    headers = {
+        "x-apisports-key": os.getenv("API_SPORTS_KEY")
+    }
 
-        r = requests.get(url, headers=headers, params=params, timeout=10)
-        data = r.json()
+    params = {
+        "date": date or datetime.now().strftime("%Y-%m-%d")
+    }
 
-        games = []
-        for item in data.get("response", []):
-            league = item["league"]["name"]
-            if league_filter and league_filter.lower() not in league.lower():
-                continue
+    r = requests.get(url, headers=headers, params=params, timeout=10)
+    data = r.json()
 
-            home = item["teams"]["home"]["name"]
-            away = item["teams"]["away"]["name"]
-            games.append(f"{home} - {away} ({league})")
+    now_utc = datetime.utcnow()
+    games = []
 
-        return games
-    except:
-        return []
+    for item in data.get("response", []):
+        game_time = datetime.fromisoformat(
+            item["date"].replace("Z", "")
+        )
+
+        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇLARI ELE
+        if game_time <= now_utc:
+            continue
+
+        league_name = item["league"]["name"]
+
+        # ⛔ LİG FİLTRESİ
+        if league and league.lower() not in league_name.lower():
+            continue
+
+        home = item["teams"]["home"]["name"]
+        away = item["teams"]["away"]["name"]
+
+        kickoff = game_time.strftime("%H:%M")
+
+        games.append(f"{home} - {away} ({league_name}) ⏰ {kickoff}")
+
+    return games
+
 
 
 
