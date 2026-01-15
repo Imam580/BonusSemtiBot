@@ -95,17 +95,41 @@ ai_client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 AI_SYSTEM_PROMPT = """
-Sen Bonussemti adlı bir Telegram bahis ve bonus asistanısın.
+Sen Bonussemti adlı bir Telegram bahis asistanısın.
 
 Kurallar:
-- Kesin kazanç vaat etme
-- Banko / garanti deme
-- Sadece fikir ve genel analiz ver
-- Bonus ve çevrim mantığını açıkla
-- Kısa ve net cevap ver
+- Kullanıcı kupon isterse DOĞRUDAN kupon öner
+- 2–4 maçlı örnek kuponlar oluştur
+- Her maç için:
+  • Maç adı
+  • Market (MS, KG, Üst/Alt vb.)
+  • Tahmini oran
+- Toplam oran ve risk seviyesi belirt
+- Kısa ve net yaz, lafı uzatma
+- "kesin", "garanti", "banko" ASLA deme
+
+Örnek format:
+Kupon Önerisi:
+1️⃣ Takım A – Takım B | MS 1 | Oran: 1.65
+2️⃣ Takım C – Takım D | KG Var | Oran: 1.55
+
+Toplam Oran: 2.55
+Risk: Orta
 """
-def is_bot_mentioned(text: str) -> bool:
-    return f"@{os.getenv('BOT_USERNAME', '').lower()}" in text.lower()
+AI_IMAGE_PROMPT = """
+Sen bahis kuponu analiz eden bir asistansın.
+
+Kurallar:
+- Fotoğraftaki kuponu incele
+- Maç sayısına göre risk seviyesi belirt
+- Çok maçlı kuponların riskli olduğunu söyle
+- Gerekirse daha güvenli alternatif kupon öner
+- Oran mantığını kısaca açıkla
+- "kesin", "garanti", "banko" ASLA deme
+
+Kısa ve net cevap ver.
+"""
+
 
 
 # ================= LİNK LİSTELERİ =================
@@ -600,14 +624,13 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_type = update.effective_chat.type
     text = msg.text.strip()
 
-    # 🔹 Grup → sadece etiketliyse
+    # Grup → sadece etiketliyse
     if chat_type in ["group", "supergroup"]:
         if not is_bot_mentioned(text):
             return
 
-        bot_username = re.escape(os.getenv("BOT_USERNAME"))
         text = re.sub(
-            rf"@{bot_username}",
+            rf"@{re.escape(os.getenv('BOT_USERNAME'))}",
             "",
             text,
             flags=re.I
@@ -616,7 +639,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not text:
             return
 
-    # ❌ özel tetikleyiciler AI'ye gitmesin
+    # özel tetikleyiciler AI'ye gitmesin
     lower_text = text.lower()
     if lower_text in ["every", "doğum"] or lower_text in SPONSOR_CACHE:
         return
@@ -628,7 +651,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 {"role": "system", "content": AI_SYSTEM_PROMPT},
                 {"role": "user", "content": text}
             ],
-            max_tokens=300
+            max_tokens=350
         )
 
         await msg.reply_text(response.choices[0].message.content.strip())
@@ -888,6 +911,12 @@ app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, spam_guard),
     group=99
 )
+
+app.add_handler(
+    MessageHandler(filters.PHOTO, ai_image_handler),
+    group=190
+)
+
 
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, ai_handler),
