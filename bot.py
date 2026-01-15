@@ -242,10 +242,10 @@ def get_today_basketball(date=None, league=None):
 def get_date_range():
     today = datetime.now().date()
     return [
-        today.strftime("%Y-%m-%d"),
-        (today + timedelta(days=1)).strftime("%Y-%m-%d"),
-        (today + timedelta(days=2)).strftime("%Y-%m-%d"),
+        (today + timedelta(days=i)).strftime("%Y-%m-%d")
+        for i in range(0, 5)
     ]
+
 
 
 
