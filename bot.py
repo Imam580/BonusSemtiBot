@@ -6,6 +6,13 @@ import requests
 import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import pytz
+
+TR_TZ = pytz.timezone("Europe/Istanbul")
+
+def get_today():
+    return datetime.now(TR_TZ)
+
 
 
 
@@ -799,16 +806,36 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_type = update.effective_chat.type
     bot_username = os.getenv("BOT_USERNAME")
     text = msg.text.strip()
+    lower = text.lower()
 
     # Grup → sadece etiketliyse
     if chat_type in ["group", "supergroup"]:
-        if not bot_username or f"@{bot_username.lower()}" not in text.lower():
+        if not bot_username or f"@{bot_username.lower()}" not in lower:
             return
-        text = re.sub(rf"@{re.escape(bot_username)}", "", text, flags=re.I).strip()
+        text = re.sub(
+            rf"@{re.escape(bot_username)}",
+            "",
+            text,
+            flags=re.I
+        ).strip()
         if not text:
             return
+        lower = text.lower()
 
-    lower = text.lower()
+    # 📅 TARİH / GÜN SORULARI (AI'YA GİTMEZ)
+    if any(k in lower for k in ["bugün", "ayın kaçı", "tarih", "günlerden"]):
+        today = get_today()
+
+        gunler = [
+            "Pazartesi", "Salı", "Çarşamba",
+            "Perşembe", "Cuma", "Cumartesi", "Pazar"
+        ]
+
+        await msg.reply_text(
+            f"📅 Bugün {today.strftime('%d %B %Y')}\n"
+            f"🗓️ Günlerden {gunler[today.weekday()]}"
+        )
+        return
 
     # 🌦️ HAVA DURUMU
     if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
@@ -819,13 +846,9 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 🎯 KUPON MODU
     if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
 
-        # 🔹 TARİH SADECE KULLANICI YAZARSA
         date = extract_date(text)
-
-        # 🔹 LİG SADECE KULLANICI YAZARSA
         league = extract_league(text)
 
-        # 🔹 SPOR TÜRÜ
         want_football = "basket" not in lower
         want_basket = "futbol" not in lower
 
@@ -872,6 +895,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await msg.reply_text(response.choices[0].message.content.strip())
+
 
 
 
@@ -970,10 +994,10 @@ def extract_date(text: str) -> str | None:
     text = text.lower()
 
     if "bugün" in text:
-        return datetime.now().strftime("%Y-%m-%d")
+    return get_today().strftime("%Y-%m-%d")
 
     if "yarın" in text:
-        return (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    return (get_today() + timedelta(days=1)).strftime("%Y-%m-%d")
 
     aylar = {
         "ocak": 1, "şubat": 2, "mart": 3, "nisan": 4,
