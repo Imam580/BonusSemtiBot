@@ -994,10 +994,10 @@ def extract_date(text: str) -> str | None:
     text = text.lower()
 
     if "bugün" in text:
-    return get_today().strftime("%Y-%m-%d")
+        return get_today().strftime("%Y-%m-%d")
 
     if "yarın" in text:
-    return (get_today() + timedelta(days=1)).strftime("%Y-%m-%d")
+        return (get_today() + timedelta(days=1)).strftime("%Y-%m-%d")
 
     aylar = {
         "ocak": 1, "şubat": 2, "mart": 3, "nisan": 4,
@@ -1009,11 +1009,16 @@ def extract_date(text: str) -> str | None:
         if ay in text:
             try:
                 gun = int(re.search(r"\d{1,2}", text).group())
-                return datetime(datetime.now().year, ay_no, gun).strftime("%Y-%m-%d")
+                return datetime(
+                    get_today().year,
+                    ay_no,
+                    gun
+                ).strftime("%Y-%m-%d")
             except:
                 pass
 
     return None
+
 
 
 def extract_league(text: str) -> str | None:
