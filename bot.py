@@ -753,9 +753,11 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot_username = os.getenv("BOT_USERNAME")
     text = msg.text.strip()
 
-    # Grup → sadece etiketliyse
+    # Grup → sadece bot etiketliyse
     if chat_type in ["group", "supergroup"]:
-        if not bot_username or f"@{bot_username.lower()}" not in text.lower():
+        if not bot_username:
+            return
+        if f"@{bot_username.lower()}" not in text.lower():
             return
 
         text = re.sub(
@@ -765,47 +767,60 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             flags=re.I
         ).strip()
 
-    # BUGÜNÜN GERÇEK MAÇLARINI ÇEK
-    football_matches = get_today_football()
-    basketball_matches = get_today_basketball()
+        if not text:
+            return
 
-    if not football_matches and not basketball_matches:
-        await msg.reply_text("⚠️ Bugün için maç verisi bulunamadı.")
-        return
+    lower_text = text.lower()
 
-    prompt = f"""
-BUGÜNÜN GERÇEK MAÇLARI:
+    # 🔍 NİYET TESPİTİ
+    IS_COUPON_REQUEST = any(word in lower_text for word in [
+        "kupon", "kupon yap", "kupon öner", "bana kupon", "maçlarla kupon"
+    ])
 
-FUTBOL:
-{chr(10).join(football_matches[:15])}
+    IS_SINGLE_MATCH_ANALYSIS = any(word in lower_text for word in [
+        "gol çıkar mı", "üst olur mu", "alt olur mu",
+        "kg var mı", "analiz", "nasıl maç"
+    ])
 
-BASKETBOL:
-{chr(10).join(basketball_matches[:15])}
+    # 🧠 PROMPT SEÇİMİ
+    if IS_COUPON_REQUEST:
+        system_prompt = AI_SYSTEM_PROMPT
 
-KURALLAR:
-- SADECE yukarıdaki maçlardan kupon yap
-- Takım uydurma
-- 2–4 maç seç
-- Futbol + basketbol karışık olabilir
-- Her maç için market ve tahmini oran yaz
+    elif IS_SINGLE_MATCH_ANALYSIS:
+        system_prompt = """
+Sen bir futbol maçı analiz asistanısın.
+
+Kurallar:
+- SADECE verilen maçı analiz et
+- Kupon yapma
+- Oran yazma
+- Gol olur mu, üst/alt, KG ihtimalini yorumla
 - Kısa ve net yaz
+"""
+
+    else:
+        system_prompt = """
+Sen normal bir yapay zeka asistansın.
+- Kupon yapma
+- Bahis önerme
+- Soruyu normal şekilde cevapla
 """
 
     try:
         response = ai_client.chat.completions.create(
             model=os.getenv("AI_MODEL", "gpt-4o-mini"),
             messages=[
-                {"role": "system", "content": AI_SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text}
             ],
-            max_tokens=400
+            max_tokens=350
         )
 
         await msg.reply_text(response.choices[0].message.content.strip())
 
     except Exception as e:
         print("AI ERROR:", e)
-        await msg.reply_text("⚠️ Kupon oluşturulamadı.")
+        await msg.reply_text("⚠️ Şu anda cevap veremiyorum.")
 
 
 
