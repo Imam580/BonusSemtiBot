@@ -769,21 +769,27 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_type in ["group", "supergroup"]:
         if not bot_username or f"@{bot_username.lower()}" not in text.lower():
             return
-        text = re.sub(rf"@{re.escape(bot_username)}", "", text, flags=re.I).strip()
+
+        text = re.sub(
+            rf"@{re.escape(bot_username)}",
+            "",
+            text,
+            flags=re.I
+        ).strip()
+
         if not text:
             return
 
     lower = text.lower()
 
-# 🌦️ HAVA DURUMU
-if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
-    city = extract_city(text)
-    weather = get_weather(city)
-    await msg.reply_text(weather)
-    return
+    # 🌦️ HAVA DURUMU
+    if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
+        city = extract_city(text)
+        weather = get_weather(city)
+        await msg.reply_text(weather)
+        return
 
-
-       # 🎯 KUPON MODU
+    # 🎯 KUPON MODU
     if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
 
         date = extract_date(text)
@@ -828,8 +834,7 @@ if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
         await msg.reply_text(response.choices[0].message.content.strip())
         return
 
-
-    # 🤖 NORMAL YAPAY ZEKA (ÇOK ÖNEMLİ)
+    # 🤖 NORMAL YAPAY ZEKA
     response = ai_client.chat.completions.create(
         model=os.getenv("AI_MODEL", "gpt-4o-mini"),
         messages=[
@@ -840,6 +845,7 @@ if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
     )
 
     await msg.reply_text(response.choices[0].message.content.strip())
+
 
 
 
