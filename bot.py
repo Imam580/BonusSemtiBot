@@ -4,8 +4,9 @@ import os
 import re
 import requests
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
+
 
 
 
@@ -97,62 +98,77 @@ ai_client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 AI_SYSTEM_PROMPT = """
-Sen Bonussemti adlı bir Telegram bahis asistanısın.
+Sen Bonussemti adlı bir Telegram asistanısın.
+Bu bot @Tostcu tarafından geliştirilmiştir.
 
-Kurallar:
-- Kullanıcı kupon isterse DOĞRUDAN kupon öner
-- 2–4 maçlı örnek kuponlar oluştur
-- Her maç için:
-  • Maç adı
-  • Market (MS, KG, Üst/Alt vb.)
-  • Tahmini oran
-- Toplam oran ve risk seviyesi belirt
-- Kısa ve net yaz, lafı uzatma
-- "kesin", "garanti", "banko" ASLA deme
+GENEL DAVRANIŞ:
+- Normal sorularda genel bir yapay zeka gibi cevap ver
+- Sohbet edebilir, açıklama yapabilirsin
+- Kupon İSTENMEDEN asla kupon yazma
 
-Örnek format:
-Kupon Önerisi:
-1️⃣ Takım A – Takım B | MS 1 | Oran: 1.65
-2️⃣ Takım C – Takım D | KG Var | Oran: 1.55
+BAHİS / KUPON MODU:
+- Kullanıcı açıkça kupon isterse kupon hazırla
+- 2–4 maçlı kupon oluştur
+- SADECE sana verilen (API’den gelen) gerçek maçları kullan
+- Uydurma maç, Takım A–B, X–Y ASLA yazma
 
-Toplam Oran: 2.55
-Risk: Orta
+HER MAÇ İÇİN ZORUNLU:
+- Maç adı
+- Market (MS, KG Var, Üst/Alt vb.)
+- Tahmini oran
+
+KUPOUN SONUNDA ZORUNLU:
+- Toplam oran
+- Risk seviyesi: Düşük / Orta / Yüksek
+- Kısa 1 cümlelik genel yorum
+
+KURALLAR:
+- “kesin”, “garanti”, “banko” kelimelerini ASLA kullanma
+- Emin olmadığın konuda uydurma bilgi verme
+- Kısa, net ve anlaşılır yaz
+
+📩 Bir sorun veya hata olursa @Tostcu ile iletişime geçin.
 """
+
+
 AI_IMAGE_PROMPT = """
-Sen bir bahis kupon analiz uzmanısın.
+Sen profesyonel bir bahis kupon analiz uzmanısın.
+Bu bot @Tostcu tarafından geliştirilmiştir.
 
 GÖREVİN:
-- Görseldeki kuponu TEK TEK OKU
-- Her maç için:
-  • Maç adı
-  • Market (MS, KG, Üst/Alt vb.)
-  • Oran
-- Her maç için KISA ve NET yorum yap
+- Görseldeki kuponu dikkatlice incele
+- Kupondaki maçları TEK TEK analiz et
+
+HER MAÇ İÇİN:
+- Maç adı
+- Market
+- Oran
+- 1–2 cümle NET yorum (neden mantıklı / neden riskli)
 
 ANALİZ KURALLARI:
 - Genel bahis uyarıları yapma
-- "Risklidir" deyip geçme
-- Hangi maç zayıf halka açıkça söyle
-- Oranı düşük ama mantıklı mı belirt
-- Alternatif market öner (varsa)
+- “Kuponlar risklidir” gibi klişe cümleler yazma
+- Zayıf halkayı AÇIKÇA belirt
+- Gerekirse alternatif market öner
 
 ÇIKIŞ FORMATI ZORUNLU:
 
 Kupon Analizi:
-1️⃣ MAÇ – Market – Oran
-   ➤ Yorum (1–2 cümle)
+1️⃣ MAÇ – Market – Oran  
+➤ Kısa yorum
+
+2️⃣ MAÇ – Market – Oran  
+➤ Kısa yorum
 
 Genel Değerlendirme:
-- Toplam oran: X
+- Toplam oran: X.XX
 - Risk seviyesi: Düşük / Orta / Yüksek
 - En riskli maç: X
-- Öneri: (değiştir / tek oynanır / kalabilir)
+- Genel yorum: (kalabilir / değiştirilebilir / tek oynanır)
 
-KESİNLİKLE:
-- “Genel olarak kuponlar risklidir”
-- “Bahis garanti değildir”
-gibi klişe cümleler yazma.
+📩 Sorun veya hata için @Tostcu
 """
+
 
 def get_today_football():
     url = "https://v3.football.api-sports.io/fixtures"
@@ -700,7 +716,6 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_type in ["group", "supergroup"]:
         if not msg.caption or not bot_username:
             return
-
         if f"@{bot_username.lower()}" not in msg.caption.lower():
             return
 
@@ -709,38 +724,30 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "",
             msg.caption,
             flags=re.I
-        ).strip()
-
-        if not user_text:
-            user_text = "Bu kuponu analiz eder misin?"
+        ).strip() or "Bu kuponu analiz eder misin?"
     else:
-        # DM
         user_text = msg.caption or "Bu kuponu analiz eder misin?"
 
     photo = msg.photo[-1]
     file = await context.bot.get_file(photo.file_id)
     image_url = file.file_path
 
-    try:
-        response = ai_client.chat.completions.create(
-            model=os.getenv("AI_MODEL", "gpt-4o-mini"),
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": AI_IMAGE_PROMPT + "\n" + user_text},
-                        {"type": "image_url", "image_url": {"url": image_url}},
-                    ],
-                }
-            ],
-            max_tokens=350
-        )
+    response = ai_client.chat.completions.create(
+        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": AI_IMAGE_PROMPT + "\n" + user_text},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ],
+            }
+        ],
+        max_tokens=400
+    )
 
-        await msg.reply_text(response.choices[0].message.content.strip())
+    await msg.reply_text(response.choices[0].message.content.strip())
 
-    except Exception as e:
-        print("AI IMAGE ERROR:", e)
-        await msg.reply_text("⚠️ Kuponu analiz edemedim.")
 
 
 
@@ -753,74 +760,64 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot_username = os.getenv("BOT_USERNAME")
     text = msg.text.strip()
 
-    # Grup → sadece bot etiketliyse
+    # Grup → sadece etiketliyse
     if chat_type in ["group", "supergroup"]:
-        if not bot_username:
-            return
-        if f"@{bot_username.lower()}" not in text.lower():
+        if not bot_username or f"@{bot_username.lower()}" not in text.lower():
             return
 
-        text = re.sub(
-            rf"@{re.escape(bot_username)}",
-            "",
-            text,
-            flags=re.I
-        ).strip()
-
+        text = re.sub(rf"@{re.escape(bot_username)}", "", text, flags=re.I).strip()
         if not text:
             return
 
-    lower_text = text.lower()
+    lower = text.lower()
 
-    # 🔍 NİYET TESPİTİ
-    IS_COUPON_REQUEST = any(word in lower_text for word in [
-        "kupon", "kupon yap", "kupon öner", "bana kupon", "maçlarla kupon"
-    ])
+        # 🌦️ HAVA DURUMU
+    if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
+        city = extract_city(text)
+        weather = get_weather(city)
+        await msg.reply_text(weather)
+        return
 
-    IS_SINGLE_MATCH_ANALYSIS = any(word in lower_text for word in [
-        "gol çıkar mı", "üst olur mu", "alt olur mu",
-        "kg var mı", "analiz", "nasıl maç"
-    ])
 
-    # 🧠 PROMPT SEÇİMİ
-    if IS_COUPON_REQUEST:
-        system_prompt = AI_SYSTEM_PROMPT
 
-    elif IS_SINGLE_MATCH_ANALYSIS:
-        system_prompt = """
-Sen bir futbol maçı analiz asistanısın.
+    # 🔹 KUPON İSTİYOR MU?
+    if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
+        matches = get_today_football()
 
-Kurallar:
-- SADECE verilen maçı analiz et
-- Kupon yapma
-- Oran yazma
-- Gol olur mu, üst/alt, KG ihtimalini yorumla
-- Kısa ve net yaz
-"""
+        if not matches:
+            await msg.reply_text("Bugün için uygun maç bulamadım.")
+            return
 
-    else:
-        system_prompt = """
-Sen normal bir yapay zeka asistansın.
-- Kupon yapma
-- Bahis önerme
-- Soruyu normal şekilde cevapla
-"""
+        prompt = (
+            "Bugünün maçları aşağıda.\n"
+            "Sadece bu maçları kullanarak 2–4 maçlı bir kupon hazırla.\n\n"
+            + "\n".join(matches)
+        )
 
-    try:
         response = ai_client.chat.completions.create(
             model=os.getenv("AI_MODEL", "gpt-4o-mini"),
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": text}
+                {"role": "system", "content": AI_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
             ],
-            max_tokens=350
+            max_tokens=400
         )
 
         await msg.reply_text(response.choices[0].message.content.strip())
+        return
 
-    except Exception as e:
-        print("AI ERROR:", e)
-        await msg.reply_text("⚠️ Şu anda cevap veremiyorum.")
+    # 🔹 NORMAL YAPAY ZEKA SOHBETİ
+    response = ai_client.chat.completions.create(
+        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+        messages=[
+            {"role": "system", "content": AI_SYSTEM_PROMPT},
+            {"role": "user", "content": text}
+        ],
+        max_tokens=300
+    )
+
+    await msg.reply_text(response.choices[0].message.content.strip())
+
 
 
 
@@ -847,6 +844,55 @@ async def site_kontrol(update, context):
         ]),
         parse_mode="Markdown"
     )
+
+def get_weather(city: str) -> str:
+    api_key = os.getenv("WEATHER_API_KEY")
+    if not api_key:
+        return "Hava durumu servisi aktif değil."
+
+    url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {
+        "q": city,
+        "appid": api_key,
+        "units": "metric",
+        "lang": "tr"
+    }
+
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        if r.status_code != 200:
+            return f"{city} için hava durumu bulunamadı."
+
+        data = r.json()
+        temp = data["main"]["temp"]
+        feels = data["main"]["feels_like"]
+        desc = data["weather"][0]["description"]
+        humidity = data["main"]["humidity"]
+
+        return (
+            f"🌤 {city} hava durumu:\n"
+            f"• Sıcaklık: {temp}°C (Hissedilen {feels}°C)\n"
+            f"• Durum: {desc}\n"
+            f"• Nem: %{humidity}"
+        )
+
+    except Exception:
+        return "Hava durumu alınırken hata oluştu."
+
+def extract_city(text: str) -> str:
+    cities = [
+        "istanbul", "ankara", "izmir", "bursa", "antalya",
+        "adana", "mersin", "konya", "kayseri", "gaziantep"
+    ]
+
+    lower = text.lower()
+    for c in cities:
+        if c in lower:
+            return c.capitalize()
+
+    return "Ankara"  # şehir yazmazsa default
+
+
 
 
 
