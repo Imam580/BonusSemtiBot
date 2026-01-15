@@ -813,75 +813,62 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_type in ["group", "supergroup"]:
         if not bot_username or f"@{bot_username.lower()}" not in lower:
             return
-        text = re.sub(
-            rf"@{re.escape(bot_username)}",
-            "",
-            text,
-            flags=re.I
-        ).strip()
+        text = re.sub(rf"@{re.escape(bot_username)}", "", text, flags=re.I).strip()
         if not text:
             return
         lower = text.lower()
 
-    # 📅 TARİH / GÜN SORULARI (BUGÜN + YARIN)
+    # 📅 TARİH / GÜN
     if any(k in lower for k in ["bugün", "yarın", "ayın kaçı", "tarih", "günlerden"]):
-        if "yarın" in lower:
-            target = get_today() + timedelta(days=1)
-        else:
-            target = get_today()
-
-        gunler = [
-            "Pazartesi", "Salı", "Çarşamba",
-            "Perşembe", "Cuma", "Cumartesi", "Pazar"
-        ]
-
+        target = get_today() + timedelta(days=1) if "yarın" in lower else get_today()
+        gunler = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"]
         await msg.reply_text(
             f"📅 {target.strftime('%d %B %Y')}\n"
             f"🗓️ Günlerden {gunler[target.weekday()]}"
         )
         return
 
-    # 🌦️ HAVA DURUMU
-    if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
-        city = extract_city(text)
-        await msg.reply_text(get_weather(city))
-        return
+    # 🎯 KUPON MODU (NBA FIX DAHİL)
+    if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç", "nba"]):
 
-    # 🎯 KUPON MODU
-    if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
-
-        date = extract_date(text)
+        # tarih yoksa → BUGÜN
+        date = extract_date(text) or get_today().strftime("%Y-%m-%d")
         league = extract_league(text)
 
-        want_football = "basket" not in lower
-        want_basket = "futbol" not in lower
+        # 🏀 NBA özel mantık
+        if "nba" in lower:
+            football = []
+            basketball = get_today_basketball(date, None)
+        else:
+            want_football = "basket" not in lower
+            want_basket = "futbol" not in lower
 
-        football = get_today_football(date, league) if want_football else []
-        basketball = get_today_basketball(date, league) if want_basket else []
+            football = get_today_football(date, league) if want_football else []
+            basketball = get_today_basketball(date, league) if want_basket else []
 
         matches = football + basketball
 
-        # 🔁 BUGÜN YOKSA → YARIN DENE
+        # bugün yoksa → yarın
         if not matches:
             tomorrow = (get_today() + timedelta(days=1)).strftime("%Y-%m-%d")
 
-            football = get_today_football(tomorrow, league) if want_football else []
-            basketball = get_today_basketball(tomorrow, league) if want_basket else []
-            matches = football + basketball
+            if "nba" in lower:
+                matches = get_today_basketball(tomorrow, None)
+            else:
+                football = get_today_football(tomorrow, league) if want_football else []
+                basketball = get_today_basketball(tomorrow, league) if want_basket else []
+                matches = football + basketball
 
             if not matches:
-                await msg.reply_text(
-                    "❌ Bugün ve yarın için uygun maç bulunamadı."
-                )
+                await msg.reply_text("❌ Bugün ve yarın için uygun maç bulunamadı.")
                 return
 
             date = tomorrow
 
         prompt = (
-            f"Tarih: {date or 'Farketmez'}\n"
+            f"Tarih: {date}\n"
             f"Lig: {league or 'Tümü'}\n\n"
-            "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla.\n"
-            "Her maçta saat ve tarih yazılsın.\n\n"
+            "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla:\n\n"
             + "\n".join(matches)
         )
 
@@ -897,17 +884,6 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text(response.choices[0].message.content.strip())
         return
 
-    # 🤖 NORMAL YAPAY ZEKA
-    response = ai_client.chat.completions.create(
-        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
-        messages=[
-            {"role": "system", "content": AI_SYSTEM_PROMPT},
-            {"role": "user", "content": text}
-        ],
-        max_tokens=300
-    )
-
-    await msg.reply_text(response.choices[0].message.content.strip())
 
 
 
