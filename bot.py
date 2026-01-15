@@ -194,13 +194,16 @@ def get_today_football(date=None, league=None):
             item["fixture"]["date"].replace("Z", "")
         )
 
-        # ❌ başlamış maç
+        # ❌ sadece başlamış maçları at
         if fixture_time <= now:
             continue
 
         league_name = item["league"]["name"]
-        if league and league.lower() not in league_name.lower():
-            continue
+
+        # ✅ LİG FİLTRESİ SADECE VARSA
+        if league is not None:
+            if league.lower() not in league_name.lower():
+                continue
 
         home = item["teams"]["home"]["name"]
         away = item["teams"]["away"]["name"]
@@ -213,6 +216,7 @@ def get_today_football(date=None, league=None):
         )
 
     return matches
+
 
 
 
@@ -233,7 +237,6 @@ def get_today_basketball(date=None, league=None):
     r = requests.get(url, headers=headers, params=params, timeout=10)
     data = r.json()
 
-    now = datetime.now()
     games = []
 
     for item in data.get("response", []):
@@ -241,13 +244,12 @@ def get_today_basketball(date=None, league=None):
             item["date"].replace("Z", "")
         )
 
-        # ❌ başlamış maç
-        if game_time <= now:
-            continue
-
         league_name = item["league"]["name"]
-        if league and league.lower() not in league_name.lower():
-            continue
+
+        # ✅ LİG FİLTRESİ SADECE VARSA
+        if league is not None:
+            if league.lower() not in league_name.lower():
+                continue
 
         home = item["teams"]["home"]["name"]
         away = item["teams"]["away"]["name"]
