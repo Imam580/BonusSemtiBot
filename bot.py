@@ -544,9 +544,11 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
     if not msg or not msg.text:
         return
 
+    # kanal / bot mesajı
     if msg.sender_chat:
         return
 
+    # admin muaf
     if await is_admin(update, context):
         return
 
@@ -564,29 +566,14 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
         (mention_count >= 1 and has_link) or
         (mention_count >= 1 and has_spam_word)
     ):
-        uid = msg.from_user.id
-
         # 🧹 mesajı sil
         await msg.delete()
 
-        # ⏰ DOĞRU until_date
-        until = datetime.utcnow() + timedelta(hours=1)
-
-        # 🔇 mute
-        await context.bot.restrict_chat_member(
-            chat_id=update.effective_chat.id,
-            user_id=uid,
-            permissions=ChatPermissions(can_send_messages=False),
-            until_date=until
-        )
-
-        # ⚠️ uyarı + buton
+        # ⚠️ uyarı
         await context.bot.send_message(
             update.effective_chat.id,
-            f"🚫 {msg.from_user.first_name}, @ ile reklam yasaktır.\n🔇 1 saat mute edildi.",
-            reply_markup=unmute_keyboard(uid)
+            f"🚫 {msg.from_user.first_name}, @ ile reklam yapmak yasaktır."
         )
-
 
 # ================= SİTE ADI ALGILAMA =================
 async def site_kontrol(update, context):
