@@ -816,14 +816,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_type in ["group", "supergroup"]:
         if not bot_username or f"@{bot_username.lower()}" not in text.lower():
             return
-
-        text = re.sub(
-            rf"@{re.escape(bot_username)}",
-            "",
-            text,
-            flags=re.I
-        ).strip()
-
+        text = re.sub(rf"@{re.escape(bot_username)}", "", text, flags=re.I).strip()
         if not text:
             return
 
@@ -836,66 +829,79 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text(weather)
         return
 
-   # 🎯 KUPON MODU
-if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
+    # 🎯 KUPON MODU
+    if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
 
-    date = extract_date(text) or datetime.now().strftime("%Y-%m-%d")
-    league = extract_league(text)
+        date = extract_date(text) or datetime.now().strftime("%Y-%m-%d")
+        league = extract_league(text)
 
-    football = get_today_football(date, league)
-    basketball = get_today_basketball(date, league)
+        football = get_today_football(date, league)
+        basketball = get_today_basketball(date, league)
 
-    # BUGÜN MAÇ YOKSA → YARIN
-    if not football and not basketball:
-        tomorrow = (
-            datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)
-        ).strftime("%Y-%m-%d")
+        # Bugün maç yoksa → yarına bak
+        if not football and not basketball:
+            tomorrow = (
+                datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)
+            ).strftime("%Y-%m-%d")
 
-        football = get_today_football(tomorrow, league)
-        basketball = get_today_basketball(tomorrow, league)
+            football = get_today_football(tomorrow, league)
+            basketball = get_today_basketball(tomorrow, league)
 
-        if football or basketball:
-            date = tomorrow
-            await msg.reply_text(
-                "📅 Bugün oynanacak maç yok.\n"
-                "➡️ Yarınki maçlardan kupon hazırlıyorum."
-            )
+            if football or basketball:
+                date = tomorrow
+                await msg.reply_text(
+                    "📅 Bugün oynanacak maç yok.\n"
+                    "➡️ Yarınki maçlardan kupon hazırlıyorum."
+                )
+            else:
+                await msg.reply_text(
+                    "❌ Bugün ve yarın için oynanacak maç bulunamadı."
+                )
+                return
+
+        # Spor filtresi
+        if "sadece futbol" in lower:
+            matches = football
+        elif "sadece basket" in lower or "basketbol" in lower:
+            matches = basketball
         else:
-            await msg.reply_text(
-                "❌ Bugün ve yarın için oynanacak maç bulunamadı."
-            )
+            matches = football + basketball
+
+        if not matches:
+            await msg.reply_text("Belirttiğin kriterlerde maç bulunamadı.")
             return
 
-    if "sadece futbol" in lower:
-        matches = football
-    elif "sadece basket" in lower or "basketbol" in lower:
-        matches = basketball
-    else:
-        matches = football + basketball
+        prompt = (
+            f"Tarih: {date}\n"
+            f"Lig: {league or 'Tümü'}\n\n"
+            "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla.\n"
+            "Her maçta saat ve tarih yazılsın.\n\n"
+            + "\n".join(matches)
+        )
 
-    if not matches:
-        await msg.reply_text("Belirttiğin kriterlerde maç bulunamadı.")
+        response = ai_client.chat.completions.create(
+            model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": AI_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=450
+        )
+
+        await msg.reply_text(response.choices[0].message.content.strip())
         return
 
-    prompt = (
-        f"Tarih: {date}\n"
-        f"Lig: {league or 'Tümü'}\n\n"
-        "Aşağıdaki maçları kullanarak 2–4 maçlı kupon hazırla.\n"
-        "Her maçta saat ve tarih yazılsın.\n\n"
-        + "\n".join(matches)
-    )
-
+    # 🤖 NORMAL YAPAY ZEKA
     response = ai_client.chat.completions.create(
         model=os.getenv("AI_MODEL", "gpt-4o-mini"),
         messages=[
             {"role": "system", "content": AI_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": text}
         ],
-        max_tokens=450
+        max_tokens=300
     )
 
     await msg.reply_text(response.choices[0].message.content.strip())
-    return
 
 
 
