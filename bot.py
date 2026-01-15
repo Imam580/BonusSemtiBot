@@ -6,12 +6,13 @@ import requests
 import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-import pytz
+from zoneinfo import ZoneInfo
 
-TR_TZ = pytz.timezone("Europe/Istanbul")
+TR_TZ = ZoneInfo("Europe/Istanbul")
 
 def get_today():
     return datetime.now(TR_TZ)
+
 
 
 
