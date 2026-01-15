@@ -13,6 +13,10 @@ TR_TZ = ZoneInfo("Europe/Istanbul")
 def get_today():
     return datetime.now(TR_TZ)
 
+def get_utc_date(days=0):
+    return (datetime.utcnow() + timedelta(days=days)).strftime("%Y-%m-%d")
+
+
 
 
 
@@ -855,7 +859,7 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         max_days = 1 if only_today else 7
 
         for i in range(0, max_days):
-            check_date = (get_today() + timedelta(days=i)).strftime("%Y-%m-%d")
+            check_date = get_utc_date(i)
             daily = []
 
             if want_football:
