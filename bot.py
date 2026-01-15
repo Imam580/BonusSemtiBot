@@ -176,8 +176,10 @@ def get_today_football(date=None, league=None):
         "x-apisports-key": os.getenv("API_SPORTS_KEY")
     }
 
+    target_date = date or datetime.now().strftime("%Y-%m-%d")
+
     params = {
-        "date": date or datetime.now().strftime("%Y-%m-%d")
+        "date": target_date
     }
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
@@ -191,7 +193,7 @@ def get_today_football(date=None, league=None):
             item["fixture"]["date"].replace("Z", "")
         )
 
-        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇLARI ELE
+        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇ
         if fixture_time <= now_utc:
             continue
 
@@ -204,11 +206,15 @@ def get_today_football(date=None, league=None):
         home = item["teams"]["home"]["name"]
         away = item["teams"]["away"]["name"]
 
-        kickoff = fixture_time.strftime("%H:%M")
+        tarih = fixture_time.strftime("%d.%m.%Y")
+        saat = fixture_time.strftime("%H:%M")
 
-        matches.append(f"{home} - {away} ({league_name}) ⏰ {kickoff}")
+        matches.append(
+            f"{home} - {away} ({league_name}) | 📅 {tarih} ⏰ {saat}"
+        )
 
     return matches
+
 
 
 def get_today_basketball(date=None, league=None):
@@ -217,8 +223,10 @@ def get_today_basketball(date=None, league=None):
         "x-apisports-key": os.getenv("API_SPORTS_KEY")
     }
 
+    target_date = date or datetime.now().strftime("%Y-%m-%d")
+
     params = {
-        "date": date or datetime.now().strftime("%Y-%m-%d")
+        "date": target_date
     }
 
     r = requests.get(url, headers=headers, params=params, timeout=10)
@@ -232,7 +240,7 @@ def get_today_basketball(date=None, league=None):
             item["date"].replace("Z", "")
         )
 
-        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇLARI ELE
+        # ⛔ BAŞLAMIŞ / BİTMİŞ MAÇ
         if game_time <= now_utc:
             continue
 
@@ -245,11 +253,15 @@ def get_today_basketball(date=None, league=None):
         home = item["teams"]["home"]["name"]
         away = item["teams"]["away"]["name"]
 
-        kickoff = game_time.strftime("%H:%M")
+        tarih = game_time.strftime("%d.%m.%Y")
+        saat = game_time.strftime("%H:%M")
 
-        games.append(f"{home} - {away} ({league_name}) ⏰ {kickoff}")
+        games.append(
+            f"{home} - {away} ({league_name}) | 📅 {tarih} ⏰ {saat}"
+        )
 
     return games
+
 
 
 
