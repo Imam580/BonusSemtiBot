@@ -843,8 +843,26 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    # 🎬 DİZİ / FİLM ÖNERİ
+if any(k in lower for k in ["dizi", "film", "netflix", "amazon", "izleyecek"]):
+    response = ai_client.chat.completions.create(
+        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+        messages=[
+            {
+                "role": "system",
+                "content": "Kısa, net ve spoiler vermeden dizi/film öner."
+            },
+            {"role": "user", "content": text}
+        ],
+        max_tokens=250
+    )
+
+    await msg.reply_text(response.choices[0].message.content.strip())
+    return
+
+
     # 🎯 KUPON MODU
-    if any(k in lower for k in ["kupon", "maç", "öner", "bahis", "iddaa"]):
+    if any(k in lower for k in ["kupon", "maç","bahis", "iddaa"]):
 
         # 👉 KULLANICI NE İSTEDİ?
         want_football = "futbol" in lower
