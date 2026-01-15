@@ -780,9 +780,13 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    # 🔹 KUPON İSTİYOR MU?
+       # 🔹 KUPON İSTİYOR MU?
     if any(k in lower for k in ["kupon", "iddaa", "bahis", "maç öner"]):
-        matches = get_today_football()
+
+        football = get_today_football()
+        basketball = get_today_basketball()
+
+        matches = football + basketball
 
         if not matches:
             await msg.reply_text("Bugün için uygun maç bulamadım.")
@@ -790,7 +794,8 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         prompt = (
             "Bugünün maçları aşağıda.\n"
-            "Sadece bu maçları kullanarak 2–4 maçlı bir kupon hazırla.\n\n"
+            "SADECE bu maçları kullanarak 2–4 maçlı bir kupon hazırla.\n"
+            "Futbol ve basketbol karışık olabilir.\n\n"
             + "\n".join(matches)
         )
 
@@ -806,17 +811,6 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text(response.choices[0].message.content.strip())
         return
 
-    # 🔹 NORMAL YAPAY ZEKA SOHBETİ
-    response = ai_client.chat.completions.create(
-        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
-        messages=[
-            {"role": "system", "content": AI_SYSTEM_PROMPT},
-            {"role": "user", "content": text}
-        ],
-        max_tokens=300
-    )
-
-    await msg.reply_text(response.choices[0].message.content.strip())
 
 
 
