@@ -778,7 +778,12 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 🌦️ HAVA DURUMU
     if any(k in lower for k in ["hava", "hava durumu", "kaç derece", "yağmur"]):
         city = extract_city(text)
-        weather = get_weather(city)
+    if not city:
+        await msg.reply_text("Hangi şehir için hava durumunu istiyorsun?")
+        return
+
+weather = get_weather(city)
+
         await msg.reply_text(weather)
         return
 
@@ -902,18 +907,30 @@ def get_weather(city: str) -> str:
     except Exception:
         return "Hava durumu alınırken hata oluştu."
 
-def extract_city(text: str) -> str:
+def extract_city(text: str) -> str | None:
     cities = [
-        "istanbul", "ankara", "izmir", "bursa", "antalya",
-        "adana", "mersin", "konya", "kayseri", "gaziantep"
+        "adana","adıyaman","afyon","ağrı","amasya","ankara","antalya","artvin",
+        "aydın","balıkesir","bilecik","bingöl","bitlis","bolu","burdur","bursa",
+        "çanakkale","çankırı","çorum","denizli","diyarbakır","edirne","elazığ",
+        "erzincan","erzurum","eskişehir","gaziantep","giresun","gümüşhane",
+        "hakkari","hatay","ısparta","mersin","istanbul","izmir","kars","kastamonu",
+        "kayseri","kırklareli","kırşehir","kocaeli","konya","kütahya","malatya",
+        "manisa","kahramanmaraş","mardin","muğla","muş","nevşehir","niğde","ordu",
+        "rize","sakarya","samsun","siirt","sinop","sivas","tekirdağ","tokat",
+        "trabzon","tunceli","şanlıurfa","uşak","van","yozgat","zonguldak",
+        "aksaray","bayburt","karaman","kırıkkale","batman","şırnak","bartın",
+        "ardahan","iğdır","yalova","karabük","kilis","osmaniye","düzce"
     ]
 
-    lower = text.lower()
-    for c in cities:
-        if c in lower:
-            return c.capitalize()
+    text = text.lower()
 
-    return "Ankara"  # şehir yazmazsa default
+    for city in cities:
+        # sivas / sivasta / sivas'ta / sivasda
+        if re.search(rf"\b{city}\b", text) or re.search(rf"\b{city}(da|de|ta|te)\b", text):
+            return city.capitalize()
+
+    return None
+
 
 def extract_date(text: str) -> str | None:
     """
