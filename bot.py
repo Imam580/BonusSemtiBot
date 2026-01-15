@@ -1,9 +1,9 @@
 # bot.py
+from openai import OpenAI
 import os
 import re
 from datetime import timedelta
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 
 
 
@@ -90,6 +90,23 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise RuntimeError("TOKEN missing")
+
+ai_client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+AI_SYSTEM_PROMPT = """
+Sen Bonussemti adlı bir Telegram bahis ve bonus asistanısın.
+
+Kurallar:
+- Kesin kazanç vaat etme
+- Banko / garanti deme
+- Sadece fikir ve genel analiz ver
+- Bonus ve çevrim mantığını açıkla
+- Kısa ve net cevap ver
+"""
+def is_bot_mentioned(text: str) -> bool:
+    return f"@{os.getenv('BOT_USERNAME', '').lower()}" in text.lower()
+
 
 # ================= LİNK LİSTELERİ =================
 # 🔧 BURAYA AYNI FORMATTA EKLEYEREK ÇOĞALT
@@ -575,6 +592,52 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
             f"🚫 {msg.from_user.first_name}, @ ile reklam yapmak yasaktır."
         )
 
+async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or not msg.text:
+        return
+
+    chat_type = update.effective_chat.type
+    text = msg.text.strip()
+
+    # 🔹 Grup → sadece etiketliyse
+    if chat_type in ["group", "supergroup"]:
+        if not is_bot_mentioned(text):
+            return
+
+        bot_username = re.escape(os.getenv("BOT_USERNAME"))
+        text = re.sub(
+            rf"@{bot_username}",
+            "",
+            text,
+            flags=re.I
+        ).strip()
+
+        if not text:
+            return
+
+    # ❌ özel tetikleyiciler AI'ye gitmesin
+    lower_text = text.lower()
+    if lower_text in ["every", "doğum"] or lower_text in SPONSOR_CACHE:
+        return
+
+    try:
+        response = ai_client.chat.completions.create(
+            model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": AI_SYSTEM_PROMPT},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=300
+        )
+
+        await msg.reply_text(response.choices[0].message.content.strip())
+
+    except Exception:
+        await msg.reply_text("⚠️ Şu anda cevap veremiyorum.")
+
+
+
 # ================= SİTE ADI ALGILAMA =================
 async def site_kontrol(update, context):
     if not update.message or not update.message.text:
@@ -825,6 +888,12 @@ app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, spam_guard),
     group=99
 )
+
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, ai_handler),
+    group=200
+)
+
 
 # ================= RUN =================
 if __name__ == "__main__":
