@@ -630,26 +630,40 @@ def yatay_butonlar(data: dict, satir=2):
 
 
 # ================= GUARD: LİNK =================
-async def link_guard(update, context):
-    if not update.message or update.message.sender_chat:
+LINK_REGEX = re.compile(
+    r"(http[s]?://|www\.|t\.me/|[a-z0-9\-]+\.(com|net|org|io|co))",
+    re.IGNORECASE
+)
+
+async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or not msg.text:
         return
-    if update.message.forward_from_chat:
+
+    # kanal / bot mesajı
+    if msg.sender_chat:
         return
+
+    # admin muaf
     if await is_admin(update, context):
         return
 
-    text = update.message.text.lower()
-    if "http://" in text or "https://" in text or "t.me/" in text:
-        uid = update.message.from_user.id
-        await update.message.delete()
+    text = msg.text.lower()
+
+    if LINK_REGEX.search(text):
+        uid = msg.from_user.id
+
+        await msg.delete()
         await context.bot.restrict_chat_member(
             update.effective_chat.id,
             uid,
             ChatPermissions(can_send_messages=False),
             until_date=timedelta(hours=1)
         )
-        await update.effective_chat.send_message(
-            "🔇 Link paylaştığınız için 1 saat mute",
+
+        await context.bot.send_message(
+            update.effective_chat.id,
+            f"🔇 {msg.from_user.first_name}, link paylaşımı yasaktır. (1 saat mute)",
             reply_markup=unmute_keyboard(uid)
         )
 
