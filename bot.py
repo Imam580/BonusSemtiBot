@@ -669,35 +669,20 @@ async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYP
     if msg.sender_chat:
         return
 
-    # admin muaf
+    # adminler muaf
     if await is_admin(update, context):
         return
 
-    bot_username = os.getenv("BOT_USERNAME")
+    text = msg.text
 
-    # ✅ Bot etiketlenmişse guard çalışmaz
-    if bot_username and f"@{bot_username.lower()}" in msg.text.lower():
-        return
-
-    text = msg.text.lower()
-
-    mention_count = text.count("@")
-    if mention_count == 0:
-        return
-
-    has_link = bool(re.search(r"http|t\.me|\.com|\.net|\.org", text))
-    has_spam_word = any(w in text for w in MENTION_SPAM_WORDS)
-
-    if (
-        mention_count >= 2 or
-        (mention_count >= 1 and has_link) or
-        (mention_count >= 1 and has_spam_word)
-    ):
+    # herhangi bir @ varsa (bot dahil)
+    if "@" in text:
         await msg.delete()
         await context.bot.send_message(
             update.effective_chat.id,
-            f"🚫 {msg.from_user.first_name}, @ ile reklam yapmak yasaktır."
+            f"🚫 {msg.from_user.first_name}, grupta etiket kullanmak yasaktır."
         )
+
 
 
 async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
