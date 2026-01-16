@@ -507,70 +507,6 @@ async def forward_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_chat.send_message(
             "🚫 Kanal iletileri yasak. 1 saat mute."
         )
-import time
-import re
-
-EMOJI_REGEX = re.compile("[\U0001F300-\U0001FAFF]")
-
-emoji_tracker = {}
-emoji_warned = set()
-
-async def emoji_flood_guard(update, context):
-    msg = update.message
-    if not msg or not msg.text or msg.sender_chat:
-        return
-    if await is_admin(update, context):
-        return
-
-    emojis = EMOJI_REGEX.findall(msg.text)
-    if len(emojis) < 5:
-        return
-
-    uid = msg.from_user.id
-    now = time.time()
-
-    data = emoji_tracker.get(uid)
-
-    if not data:
-        emoji_tracker[uid] = {"count": 1, "first": now}
-        await msg.delete()
-        return
-
-    if now - data["first"] > 5:
-        emoji_tracker[uid] = {"count": 1, "first": now}
-        emoji_warned.discard(uid)
-        await msg.delete()
-        return
-
-    data["count"] += 1
-
-    # ⚠️ uyarı
-    if data["count"] == 2 and uid not in emoji_warned:
-        emoji_warned.add(uid)
-        await msg.delete()
-        await context.bot.send_message(
-            update.effective_chat.id,
-            f"⚠️ {msg.from_user.first_name}, emoji flood yapma!"
-        )
-        return
-
-    # 🔇 mute
-    if data["count"] >= 3:
-        await msg.delete()
-        emoji_tracker.pop(uid, None)
-        emoji_warned.discard(uid)
-
-        await context.bot.restrict_chat_member(
-            update.effective_chat.id,
-            uid,
-            ChatPermissions(can_send_messages=False),
-            until_date=timedelta(hours=1)
-        )
-
-        await context.bot.send_message(
-            update.effective_chat.id,
-            f"🔇 {msg.from_user.first_name} emoji flood nedeniyle 1 saat mute edildi."
-        )
 
 import re
 
@@ -1359,10 +1295,6 @@ app.add_handler(
 
 # ================= 🚨 3️⃣ FLOOD / SPAM (EN SON – DOKUNULMAZ) =================
 
-app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, emoji_flood_guard),
-    group=98
-)
 
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, spam_guard),
