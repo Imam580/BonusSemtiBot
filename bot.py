@@ -640,13 +640,9 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not msg or not msg.text:
         return
 
-     chat_type = update.effective_chat.type
-
-    # kanal / bot mesajı
     if msg.sender_chat:
         return
 
-    # admin muaf
     if await is_admin(update, context):
         return
 
@@ -672,14 +668,25 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    # Grup → sadece etiketliyse
-    if chat_type in ["group", "supergroup"]:
-        if not bot_username or f"@{bot_username.lower()}" not in lower:
-            return
-        text = re.sub(rf"@{re.escape(bot_username)}", "", text, flags=re.I).strip()
-        if not text:
-            return
-        lower = text.lower()
+
+   # Grup → sadece etiketliyse
+if update.effective_chat.type in ["group", "supergroup"]:
+    bot_username = context.bot.username
+
+    if f"@{bot_username.lower()}" not in text.lower():
+        return
+
+    # etiketi temizle
+    text = re.sub(
+        rf"@{re.escape(bot_username)}",
+        "",
+        text,
+        flags=re.I
+    ).strip()
+
+    if not text:
+        return
+
 
     # 📅 SADECE TARİH SORUSU (kupon yoksa)
     if any(k in lower for k in ["günlerden", "ayın kaçı", "tarih"]) and not any(
