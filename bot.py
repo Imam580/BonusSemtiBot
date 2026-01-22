@@ -813,6 +813,24 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    text = update.message.text
+
+    response = ai_client.chat.completions.create(
+        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+        messages=[
+            {"role": "system", "content": AI_SYSTEM_PROMPT},
+            {"role": "user", "content": text}
+        ],
+        max_tokens=300
+    )
+
+    await update.message.reply_text(
+        response.choices[0].message.content.strip()
+    )
 
 
 
