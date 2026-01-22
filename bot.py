@@ -670,7 +670,8 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-  async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     if not update.message or not update.message.text:
         return
 
