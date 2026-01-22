@@ -668,94 +668,7 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-# ================= GUARD: KANAL ETİKET =================
-MENTION_SPAM_WORDS = [
-    "bonus", "kazanç", "bahis", "free",
-    "kazan", "link", "telegram", "grup","yaz","gel","herkese",
-]
 
-async def mention_reklam_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    if not msg or not msg.text:
-        return
-
-    # kanal / bot mesajı
-    if msg.sender_chat:
-        return
-
-    # adminler muaf
-    if await is_admin(update, context):
-        return
-
-    text = msg.text
-
-    # herhangi bir @ varsa (bot dahil)
-    if "@" in text:
-        await msg.delete()
-        await context.bot.send_message(
-            update.effective_chat.id,
-            f"🚫 {msg.from_user.first_name}, grupta etiket kullanmak yasaktır."
-        )
-
-
-
-async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    if not msg or not msg.photo:
-        return
-
-    chat_type = update.effective_chat.type
-    bot_username = os.getenv("BOT_USERNAME")
-
-    # Grup → sadece etiketliyse
-    if chat_type in ["group", "supergroup"]:
-        if not msg.caption or not bot_username:
-            return
-        if f"@{bot_username.lower()}" not in msg.caption.lower():
-            return
-
-        user_text = re.sub(
-            rf"@{re.escape(bot_username)}",
-            "",
-            msg.caption,
-            flags=re.I
-        ).strip() or "Bu kuponu analiz eder misin?"
-    else:
-        user_text = msg.caption or "Bu kuponu analiz eder misin?"
-
-    photo = msg.photo[-1]
-    file = await context.bot.get_file(photo.file_id)
-    image_url = file.file_path
-
-    response = ai_client.chat.completions.create(
-        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": AI_IMAGE_PROMPT + "\n" + user_text},
-                    {"type": "image_url", "image_url": {"url": image_url}},
-                ],
-            }
-        ],
-        max_tokens=400
-    )
-
-    await msg.reply_text(response.choices[0].message.content.strip())
-
-
-
-
-async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    if not msg or not msg.text:
-        return
-
-    chat_type = update.effective_chat.type
-    bot_username = os.getenv("BOT_USERNAME")
-
-    text = msg.text.strip()
-    lower = text.lower()
 
     # Grup → sadece etiketliyse
     if chat_type in ["group", "supergroup"]:
@@ -1284,11 +1197,6 @@ app.add_handler(
     group=11
 )
 
-# ================= GUARD: KANAL ETİKET =================
-app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, mention_reklam_guard),
-    group=12
-)
 
 
 
