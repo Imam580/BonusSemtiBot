@@ -709,7 +709,7 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # 🎬 DİZİ / FİLM ÖNERİ
+    # 🎬 DİZİ / FİLM
     if any(k in lower for k in ["dizi", "film", "netflix", "amazon", "izle"]):
         response = ai_client.chat.completions.create(
             model=os.getenv("AI_MODEL", "gpt-4o-mini"),
@@ -795,7 +795,6 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(response.choices[0].message.content.strip())
 
-
 async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.photo:
         return
@@ -829,6 +828,7 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         response.choices[0].message.content.strip()
     )
+
 
 
 
