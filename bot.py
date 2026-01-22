@@ -4,9 +4,11 @@ import os
 import re
 import requests
 import time
+import base64
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
+
 
 TR_TZ = ZoneInfo("Europe/Istanbul")
 
@@ -697,7 +699,7 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         lower = text.lower()
 
-    # 📅 SADECE TARİH SORUSU (kupon yoksa)
+    # 📅 TARİH
     if any(k in lower for k in ["günlerden", "ayın kaçı", "tarih"]) and not any(
         k in lower for k in ["kupon", "bahis", "iddaa"]
     ):
@@ -714,10 +716,7 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = ai_client.chat.completions.create(
             model=os.getenv("AI_MODEL", "gpt-4o-mini"),
             messages=[
-                {
-                    "role": "system",
-                    "content": "Kısa, net ve spoiler vermeden dizi/film öner."
-                },
+                {"role": "system", "content": "Kısa, net ve spoiler vermeden öner."},
                 {"role": "user", "content": text}
             ],
             max_tokens=250
@@ -725,62 +724,9 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text(response.choices[0].message.content.strip())
         return
 
-    # 🎯 KUPON MODU
-    BET_KEYWORDS = ["kupon", "bahis", "iddaa"]
-
-    if any(k in lower for k in BET_KEYWORDS):
-
-        want_football = "futbol" in lower
-        want_basket = any(k in lower for k in ["basket", "nba"])
-
-        if not want_football and not want_basket:
-            want_football = True
-            want_basket = True
-
-        league = extract_league(text)
-        only_today = "bugün" in lower
-
-        matches = []
-        used_date = None
-        max_days = 1 if only_today else 7
-
-        for i in range(max_days):
-            check_date = (get_today() + timedelta(days=i)).strftime("%Y-%m-%d")
-            daily = []
-
-            if want_football:
-                daily += get_today_football(check_date, league)
-
-            if want_basket:
-                daily += get_today_basketball(check_date, league)
-
-            if daily:
-                matches = daily
-                used_date = check_date
-                break
-
-        if not matches:
-            await msg.reply_text("❌ Önümüzdeki günlerde uygun maç bulunamadı.")
-            return
-
-        prompt = (
-            f"Tarih: {used_date}\n"
-            f"Lig: {league or 'Tümü'}\n\n"
-            "SADECE aşağıdaki GERÇEK maçları kullanarak 2–4 maçlı kupon hazırla.\n"
-            "Her maçta saat ve tarih yaz.\n\n"
-            + "\n".join(matches)
-        )
-
-        response = ai_client.chat.completions.create(
-            model=os.getenv("AI_MODEL", "gpt-4o-mini"),
-            messages=[
-                {"role": "system", "content": AI_SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=450
-        )
-
-        await msg.reply_text(response.choices[0].message.content.strip())
+    # 🎯 KUPON
+    if any(k in lower for k in ["kupon", "bahis", "iddaa"]):
+        await msg.reply_text("🎯 Kupon modu aktif.")
         return
 
     # 🤖 NORMAL SOHBET
@@ -794,6 +740,7 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await msg.reply_text(response.choices[0].message.content.strip())
+
 
 async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.photo:
