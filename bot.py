@@ -804,6 +804,7 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await context.bot.get_file(photo.file_id)
 
     image_bytes = await file.download_as_bytearray()
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
     response = ai_client.chat.completions.create(
         model=os.getenv("AI_MODEL", "gpt-4o-mini"),
@@ -816,7 +817,7 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_bytes.hex()}"
+                            "url": f"data:image/jpeg;base64,{image_base64}"
                         }
                     }
                 ]
