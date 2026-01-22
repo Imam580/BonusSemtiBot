@@ -820,7 +820,26 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     text = update.message.text
+    chat = update.effective_chat
 
+    # 👤 GRUP / SUPERGROUP → SADECE ETİKETLENİRSE
+    if chat.type in ["group", "supergroup"]:
+        bot_username = context.bot.username.lower()
+        if f"@{bot_username}" not in text.lower():
+            return
+
+        # etiketi temizle
+        text = re.sub(
+            rf"@{re.escape(context.bot.username)}",
+            "",
+            text,
+            flags=re.I
+        ).strip()
+
+        if not text:
+            return
+
+    # 🤖 AI CEVAP
     response = ai_client.chat.completions.create(
         model=os.getenv("AI_MODEL", "gpt-4o-mini"),
         messages=[
