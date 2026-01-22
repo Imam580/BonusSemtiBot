@@ -1189,7 +1189,8 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ================= APP =================
 app = ApplicationBuilder().token(TOKEN).build()
 
-# ================= COMMANDS =================
+
+# ================= 🔥 COMMANDS (HER ZAMAN EN ÜSTTE) =================
 app.add_handler(CommandHandler("sponsor", sponsor))
 app.add_handler(CommandHandler("filtre", add_filter))
 app.add_handler(CommandHandler("remove", remove_filter))
@@ -1213,27 +1214,31 @@ app.add_handler(
 )
 
 
-# ================= 1️⃣ ÖZEL CEVAPLAR (ASLA SİLİNMEZ) =================
+# ================= 1️⃣ ÖZEL CEVAPLAR =================
+# ⚠️ Komutlar hariç tutulur (ÇOK ÖNEMLİ)
+
+TEXT_NO_COMMAND = filters.TEXT & ~filters.COMMAND & ~filters.Regex(r"^/")
 
 app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, every_kontrol),
+    MessageHandler(TEXT_NO_COMMAND, every_kontrol),
     group=1
 )
 
 app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, dogum_kontrol),
+    MessageHandler(TEXT_NO_COMMAND, dogum_kontrol),
     group=2
 )
 
 app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, site_kontrol),
+    MessageHandler(TEXT_NO_COMMAND, site_kontrol),
     group=3
 )
 
 app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, yakisana_yapar),
+    MessageHandler(TEXT_NO_COMMAND, yakisana_yapar),
     group=4
 )
+
 
 # ================= 2️⃣ GENEL KORUMALAR =================
 
@@ -1243,29 +1248,28 @@ app.add_handler(
 )
 
 app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, link_guard),
+    MessageHandler(TEXT_NO_COMMAND, link_guard),
     group=11
 )
 
 
-
-
-# ================= 🚨 3️⃣ FLOOD / SPAM (EN SON – DOKUNULMAZ) =================
-
+# ================= 🚨 3️⃣ FLOOD / SPAM (EN SON) =================
 
 app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, spam_guard),
+    MessageHandler(TEXT_NO_COMMAND, spam_guard),
     group=99
 )
+
+
+# ================= 🤖 AI =================
 
 app.add_handler(
     MessageHandler(filters.PHOTO, ai_image_handler),
     group=190
 )
 
-
 app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, ai_handler),
+    MessageHandler(TEXT_NO_COMMAND, ai_handler),
     group=200
 )
 
@@ -1274,11 +1278,11 @@ app.add_handler(
 if __name__ == "__main__":
     print("🔥 BOT AKTİF")
 
-    # cache doldur (GLOBAL YAZILMAZ)
     SPONSOR_CACHE = db_get_all_sponsors()
     print("CACHE DOLDU:", len(SPONSOR_CACHE))
 
     app.run_polling(drop_pending_updates=True)
+
 
 
 
