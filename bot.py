@@ -646,9 +646,7 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await is_admin(update, context):
         return
 
-    text = msg.text.lower()
-
-    if LINK_REGEX.search(text):
+    if LINK_REGEX.search(msg.text.lower()):
         uid = msg.from_user.id
 
         await msg.delete()
@@ -669,24 +667,35 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-   # Grup → sadece etiketliyse
-if update.effective_chat.type in ["group", "supergroup"]:
-    bot_username = context.bot.username
 
-    if f"@{bot_username.lower()}" not in text.lower():
+  async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
         return
 
-    # etiketi temizle
-    text = re.sub(
-        rf"@{re.escape(bot_username)}",
-        "",
-        text,
-        flags=re.I
-    ).strip()
+    msg = update.message
+    text = msg.text
+    lower = text.lower()
+    chat = update.effective_chat
 
-    if not text:
-        return
+    # 👤 GRUP / SUPERGROUP → SADECE ETİKETLENİRSE
+    if chat.type in ["group", "supergroup"]:
+        bot_username = context.bot.username.lower()
 
+        if f"@{bot_username}" not in lower:
+            return
+
+        # etiketi temizle
+        text = re.sub(
+            rf"@{re.escape(context.bot.username)}",
+            "",
+            text,
+            flags=re.I
+        ).strip()
+
+        if not text:
+            return
+
+        lower = text.lower()
 
     # 📅 SADECE TARİH SORUSU (kupon yoksa)
     if any(k in lower for k in ["günlerden", "ayın kaçı", "tarih"]) and not any(
@@ -713,11 +722,10 @@ if update.effective_chat.type in ["group", "supergroup"]:
             ],
             max_tokens=250
         )
-
         await msg.reply_text(response.choices[0].message.content.strip())
         return
 
-    # 🎯 KUPON MODU (SADECE BAHİS KELİMELERİ)
+    # 🎯 KUPON MODU
     BET_KEYWORDS = ["kupon", "bahis", "iddaa"]
 
     if any(k in lower for k in BET_KEYWORDS):
@@ -822,43 +830,6 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-
-    text = update.message.text
-    chat = update.effective_chat
-
-    # 👤 GRUP / SUPERGROUP → SADECE ETİKETLENİRSE
-    if chat.type in ["group", "supergroup"]:
-        bot_username = context.bot.username.lower()
-        if f"@{bot_username}" not in text.lower():
-            return
-
-        # etiketi temizle
-        text = re.sub(
-            rf"@{re.escape(context.bot.username)}",
-            "",
-            text,
-            flags=re.I
-        ).strip()
-
-        if not text:
-            return
-
-    # 🤖 AI CEVAP
-    response = ai_client.chat.completions.create(
-        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
-        messages=[
-            {"role": "system", "content": AI_SYSTEM_PROMPT},
-            {"role": "user", "content": text}
-        ],
-        max_tokens=300
-    )
-
-    await update.message.reply_text(
-        response.choices[0].message.content.strip()
-    )
 
 
 
