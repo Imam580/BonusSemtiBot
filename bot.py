@@ -640,6 +640,8 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not msg or not msg.text:
         return
 
+     chat_type = update.effective_chat.type
+
     # kanal / bot mesajı
     if msg.sender_chat:
         return
