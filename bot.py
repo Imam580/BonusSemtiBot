@@ -779,6 +779,38 @@ async def link_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await msg.reply_text(response.choices[0].message.content.strip())
 
 
+async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.photo:
+        return
+
+    photo = update.message.photo[-1]
+    file = await context.bot.get_file(photo.file_id)
+
+    image_bytes = await file.download_as_bytearray()
+
+    response = ai_client.chat.completions.create(
+        model=os.getenv("AI_MODEL", "gpt-4o-mini"),
+        messages=[
+            {"role": "system", "content": AI_IMAGE_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Bu kuponu analiz et"},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_bytes.hex()}"
+                        }
+                    }
+                ]
+            }
+        ],
+        max_tokens=500
+    )
+
+    await update.message.reply_text(
+        response.choices[0].message.content.strip()
+    )
 
 
 
