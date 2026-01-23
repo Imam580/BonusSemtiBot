@@ -1445,7 +1445,6 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = update.effective_chat.id
 
-    # STATE
     CEKILIS[chat_id] = {
         "aktif": True,
         "katilimcilar": set(),
@@ -1453,7 +1452,6 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "kazanan_sayi": 1
     }
 
-    # ⛑️ ÖNCE TEXT (Telegram command kesin algılasın)
     await update.message.reply_text("🎉 Çekiliş başlatılıyor...")
 
     keyboard = InlineKeyboardMarkup([
@@ -1461,9 +1459,9 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
 
     caption = (
-        "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
-        "🔥 Katılımcı Sayısı: **0**\n\n"
-        "🏆 **Katılımcıların kanallarımızı takip etmesi zorunludur!**\n\n"
+        "<b>🔥 BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
+        "🔥 Katılımcı Sayısı: <b>0</b>\n\n"
+        "<b>🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!</b>\n\n"
         "🔗 https://t.me/Canli_Izleme_Mac_Linkleri\n"
         "🔗 https://t.me/plasespor\n"
         "🔗 https://t.me/bonussemti\n"
@@ -1481,13 +1479,10 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 photo=photo,
                 caption=caption,
                 reply_markup=keyboard,
-                parse_mode="Markdown"
+                parse_mode="HTML"
             )
     except Exception as e:
-        await update.message.reply_text(
-            f"❌ Çekiliş başlatılamadı.\nHata: `{e}`",
-            parse_mode="Markdown"
-        )
+        await update.message.reply_text(f"❌ Hata:\n{e}")
 
 
 
