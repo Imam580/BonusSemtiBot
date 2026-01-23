@@ -1445,12 +1445,16 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = update.effective_chat.id
 
+    # STATE
     CEKILIS[chat_id] = {
         "aktif": True,
         "katilimcilar": set(),
         "kazananlar": [],
         "kazanan_sayi": 1
     }
+
+    # ⛑️ ÖNCE TEXT (Telegram command kesin algılasın)
+    await update.message.reply_text("🎉 Çekiliş başlatılıyor...")
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
@@ -1466,17 +1470,25 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔗 https://t.me/bonussemtietkinlik\n"
         "🔗 https://t.me/hergunikioran\n"
         "🔗 https://t.me/BahisKarhanesi\n"
-        "🔗 https://t.me/ozel_oran_2024"
+        "🔗 https://t.me/ozel_oran_2024\n\n"
+        f"⏱ Başlangıç: {datetime.now().strftime('%H:%M:%S')}"
     )
 
-    with open("cekilis.jpg", "rb") as photo:
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=photo,
-            caption=caption,
-            reply_markup=keyboard,
+    try:
+        with open("cekilis.jpg", "rb") as photo:
+            await context.bot.send_photo(
+                chat_id=chat_id,
+                photo=photo,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+    except Exception as e:
+        await update.message.reply_text(
+            f"❌ Çekiliş başlatılamadı.\nHata: `{e}`",
             parse_mode="Markdown"
         )
+
 
 
 async def cekilis_katil(update: Update, context: ContextTypes.DEFAULT_TYPE):
