@@ -1524,26 +1524,18 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Bu komut sadece adminler içindir.")
         return
 
-    if not CEKILIS_KATILIMCILAR:
+    chat_id = update.effective_chat.id
+
+    if chat_id not in CEKILIS or not CEKILIS[chat_id]["katilimcilar"]:
         await update.message.reply_text("📭 Katılımcı yok.")
         return
 
-    zorunlu_kanallar = [
-        "@Canli_Izleme_Mac_Linkleri",
-        "@plasespor",
-        "@bonussemti",
-        "@bonussemtietkinlik",
-        "@hergunikioran",
-        "@BahisKarhanesi",
-        "@ozel_oran_2024",
-    ]
-
     gecenler = []
 
-    for user_id in CEKILIS_KATILIMCILAR:
+    for user_id in CEKILIS[chat_id]["katilimcilar"]:
         uye_ok = True
 
-        for kanal in zorunlu_kanallar:
+        for kanal in ZORUNLU_KANALLAR:
             try:
                 member = await context.bot.get_chat_member(kanal, user_id)
                 if member.status not in ("member", "administrator", "creator"):
@@ -1560,9 +1552,12 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Şartları sağlayan kimse yok.")
         return
 
-    text = "✅ **Şartları Sağlayanlar:**\n\n"
+    # kazananları sakla
+    CEKILIS[chat_id]["kazananlar"] = gecenler
+
+    text = "✅ <b>Şartları Sağlayanlar:</b>\n\n"
     for uid in gecenler:
-        text += f"👤 <a href='tg://user?id={uid}'>Kazanan</a>\n"
+        text += f"🎯 <a href='tg://user?id={uid}'>@kazanan</a>\n"
 
     await update.message.reply_text(text, parse_mode="HTML")
 
@@ -1572,15 +1567,24 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Yetkin yok.")
         return
 
-    if not KAZANANLAR:
-        await update.message.reply_text("❌ Kazanan yok.")
+    chat_id = update.effective_chat.id
+
+    if chat_id not in CEKILIS or "kazananlar" not in CEKILIS[chat_id]:
+        await update.message.reply_text("❌ Önce /kontrol yapmalısın.")
         return
 
-    text = "🏆 <b>KAZANANLAR</b>\n\n"
+    kazananlar = CEKILIS[chat_id]["kazananlar"]
+    sayi = CEKILIS[chat_id]["kazanan_sayi"]
 
-    for uid in KAZANANLAR:
+    secilenler = random.sample(
+        kazananlar,
+        min(len(kazananlar), sayi)
+    )
+
+    text = "🏆 <b>KAZANANLAR</b>\n\n"
+    for uid in secilenler:
         try:
-            member = await context.bot.get_chat_member(update.effective_chat.id, uid)
+            member = await context.bot.get_chat_member(chat_id, uid)
             name = member.user.first_name
         except:
             name = "Kazanan"
@@ -1588,6 +1592,10 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += f"🎉 <a href='tg://user?id={uid}'>{name}</a>\n"
 
     await update.message.reply_text(text, parse_mode="HTML")
+
+    # çekilişi kapat
+    CEKILIS.pop(chat_id, None)
+
 
 
 
