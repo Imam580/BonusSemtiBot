@@ -1548,13 +1548,16 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for uid in kazananlar:
         try:
             member = await context.bot.get_chat_member(chat_id, uid)
-            text += f"🏆 {mention(member.user)}\n"
+            name = member.user.first_name
         except:
-            text += "🏆 Kazanan\n"
+            name = "Kazanan"
 
-    text += "\n🔍 /kontrol ile kanal kontrolü yapabilirsin."
+        text += f"🏆 <a href='tg://user?id={uid}'>{name}</a>\n"
+
+    text += "\n🔍 <i>/kontrol ile kanal kontrolü yapabilirsin.</i>"
 
     await update.message.reply_text(text, parse_mode="HTML")
+
 
 
 
@@ -1570,37 +1573,36 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Önce /bitir yapılmalı.")
         return
 
-    text = "<b>📋 KONTROL SONUCU</b>\n\n"
+    text = "📋 <b>KONTROL SONUCU</b>\n\n"
 
     for uid in data["kazananlar"]:
-        eksik_kanallar = []
+        eksikler = []
 
         for kanal in ZORUNLU_KANALLAR:
             try:
-                member = await context.bot.get_chat_member(kanal, uid)
-                if member.status not in ("member", "administrator", "creator"):
-                    eksik_kanallar.append(kanal)
+                m = await context.bot.get_chat_member(kanal, uid)
+                if m.status not in ("member", "administrator", "creator"):
+                    eksikler.append(kanal)
             except:
-                eksik_kanallar.append(kanal)
+                eksikler.append(kanal)
 
         try:
-            user = (await context.bot.get_chat_member(chat_id, uid)).user
-            user_mention = mention(user)
+            member = await context.bot.get_chat_member(chat_id, uid)
+            name = member.user.first_name
         except:
-            user_mention = "👤 Kazanan"
+            name = "Kazanan"
 
-        # ✅ ŞARTLARI SAĞLADI
-        if not eksik_kanallar:
-            text += f"🎉 {user_mention} ✅\n"
-
-        # ❌ ELENDİ → HANGİ KANAL YOK YAZ
-        else:
-            text += f"\n🚫 {user_mention}\n"
-            text += "❌ Takip etmediği kanallar:\n"
-            for k in eksik_kanallar:
+        if eksikler:
+            text += f"❌ <a href='tg://user?id={uid}'>{name}</a>\n"
+            text += "Takip etmediği kanallar:\n"
+            for k in eksikler:
                 text += f"• {k}\n"
+            text += "\n"
+        else:
+            text += f"✅ <a href='tg://user?id={uid}'>{name}</a>\n\n"
 
     await update.message.reply_text(text, parse_mode="HTML")
+
 
 async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
