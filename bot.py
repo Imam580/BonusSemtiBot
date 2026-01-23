@@ -1438,8 +1438,9 @@ async def deneme_page_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         reply_markup=deneme_keyboard(page)
     )
 
-async def cekilis(update, context):
+async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
+        await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
         return
 
     chat_id = update.effective_chat.id
@@ -1447,6 +1448,7 @@ async def cekilis(update, context):
     CEKILIS[chat_id] = {
         "aktif": True,
         "katilimcilar": set(),
+        "kazananlar": [],
         "kazanan_sayi": 1
     }
 
@@ -1477,7 +1479,7 @@ async def cekilis(update, context):
         )
 
 
-async def cekilis_katil(update, context):
+async def cekilis_katil(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer("Çekilişe katıldın ✅")
 
@@ -1490,55 +1492,73 @@ async def cekilis_katil(update, context):
     CEKILIS[chat_id]["katilimcilar"].add(user_id)
     sayi = len(CEKILIS[chat_id]["katilimcilar"])
 
+    caption = (
+        "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
+        f"🔥 Katılımcı Sayısı: **{sayi}**\n\n"
+        "🏆 **Katılımcıların kanallarımızı takip etmesi zorunludur!**\n\n"
+        "🔗 https://t.me/Canli_Izleme_Mac_Linkleri\n"
+        "🔗 https://t.me/plasespor\n"
+        "🔗 https://t.me/bonussemti\n"
+        "🔗 https://t.me/bonussemtietkinlik\n"
+        "🔗 https://t.me/hergunikioran\n"
+        "🔗 https://t.me/BahisKarhanesi\n"
+        "🔗 https://t.me/ozel_oran_2024"
+    )
+
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
     ])
 
     await query.message.edit_caption(
-        caption=(
-            "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
-            f"🔥 Katılımcı Sayısı: **{sayi}**\n\n"
-            "🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!"
-        ),
+        caption=caption,
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
 
-async def sayi(update, context):
+
+async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
 
     chat_id = update.effective_chat.id
+    data = CEKILIS.get(chat_id)
 
-    if not context.args:
+    if not data or not data["katilimcilar"]:
+        await update.message.reply_text("❌ Katılımcı yok.")
         return
 
-    CEKILIS[chat_id]["kazanan_sayi"] = int(context.args[0])
+    data["aktif"] = False
+
+    kazananlar = random.sample(
+        list(data["katilimcilar"]),
+        min(data["kazanan_sayi"], len(data["katilimcilar"]))
+    )
+
+    data["kazananlar"] = kazananlar
+
     await update.message.reply_text(
-        f"🎯 Kazanan sayısı **{context.args[0]}** olarak ayarlandı",
-        parse_mode="Markdown"
+        f"🎯 {len(kazananlar)} kazanan belirlendi.\n/kontrol ile kontrol edebilirsin."
     )
 
 async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
-        await update.message.reply_text("❌ Bu komut sadece adminler içindir.")
         return
 
     chat_id = update.effective_chat.id
+    data = CEKILIS.get(chat_id)
 
-    if chat_id not in CEKILIS or not CEKILIS[chat_id]["katilimcilar"]:
-        await update.message.reply_text("📭 Katılımcı yok.")
+    if not data or not data["kazananlar"]:
+        await update.message.reply_text("❌ Önce /bitir yapılmalı.")
         return
 
     gecenler = []
 
-    for user_id in CEKILIS[chat_id]["katilimcilar"]:
+    for uid in data["kazananlar"]:
         uye_ok = True
-
         for kanal in ZORUNLU_KANALLAR:
             try:
-                member = await context.bot.get_chat_member(kanal, user_id)
-                if member.status not in ("member", "administrator", "creator"):
+                m = await context.bot.get_chat_member(kanal, uid)
+                if m.status not in ("member", "administrator", "creator"):
                     uye_ok = False
                     break
             except:
@@ -1546,55 +1566,19 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
 
         if uye_ok:
-            gecenler.append(user_id)
+            gecenler.append(uid)
 
     if not gecenler:
-        await update.message.reply_text("❌ Şartları sağlayan kimse yok.")
+        await update.message.reply_text("❌ Şartları sağlayan yok.")
         return
-
-    # kazananları sakla
-    CEKILIS[chat_id]["kazananlar"] = gecenler
-
-    text = "✅ <b>Şartları Sağlayanlar:</b>\n\n"
-    for uid in gecenler:
-        text += f"🎯 <a href='tg://user?id={uid}'>@kazanan</a>\n"
-
-    await update.message.reply_text(text, parse_mode="HTML")
-
-
-async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        await update.message.reply_text("❌ Yetkin yok.")
-        return
-
-    chat_id = update.effective_chat.id
-
-    if chat_id not in CEKILIS or "kazananlar" not in CEKILIS[chat_id]:
-        await update.message.reply_text("❌ Önce /kontrol yapmalısın.")
-        return
-
-    kazananlar = CEKILIS[chat_id]["kazananlar"]
-    sayi = CEKILIS[chat_id]["kazanan_sayi"]
-
-    secilenler = random.sample(
-        kazananlar,
-        min(len(kazananlar), sayi)
-    )
 
     text = "🏆 <b>KAZANANLAR</b>\n\n"
-    for uid in secilenler:
-        try:
-            member = await context.bot.get_chat_member(chat_id, uid)
-            name = member.user.first_name
-        except:
-            name = "Kazanan"
-
-        text += f"🎉 <a href='tg://user?id={uid}'>{name}</a>\n"
+    for uid in gecenler:
+        text += f"🎉 <a href='tg://user?id={uid}'>Kazanan</a>\n"
 
     await update.message.reply_text(text, parse_mode="HTML")
 
-    # çekilişi kapat
-    CEKILIS.pop(chat_id, None)
+
 
 
 
