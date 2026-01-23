@@ -5,11 +5,6 @@ import re
 import requests
 import time
 import base64
-from collections import defaultdict
-
-MESSAGE_COUNT = defaultdict(int)
-
-
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
@@ -50,6 +45,54 @@ from telegram.ext import (
 )
 
 from database import get_db
+
+def db_increment_message(chat_id: int, user_id: int):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        """
+        INSERT INTO message_stats (chat_id, user_id, message_count)
+        VALUES (%s, %s, 1)
+        ON CONFLICT (chat_id, user_id)
+        DO UPDATE SET message_count = message_stats.message_count + 1
+        """,
+        (chat_id, user_id)
+    )
+    db.commit()
+    cur.close()
+    db.close()
+
+
+def db_get_top_messages(chat_id: int, limit=10):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        """
+        SELECT user_id, message_count
+        FROM message_stats
+        WHERE chat_id = %s
+        ORDER BY message_count DESC
+        LIMIT %s
+        """,
+        (chat_id, limit)
+    )
+    rows = cur.fetchall()
+    cur.close()
+    db.close()
+    return rows
+
+
+def db_reset_messages(chat_id: int):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "DELETE FROM message_stats WHERE chat_id = %s",
+        (chat_id,)
+    )
+    db.commit()
+    cur.close()
+    db.close()
+
 
 # ================= CACHE =================
 SPONSOR_CACHE = {}
@@ -503,8 +546,11 @@ async def message_counter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.is_bot:
         return
 
-    uid = update.message.from_user.id
-    MESSAGE_COUNT[uid] += 1
+    chat_id = update.effective_chat.id
+    user_id = update.message.from_user.id
+
+    db_increment_message(chat_id, user_id)
+
 
 
 
@@ -1079,35 +1125,33 @@ async def dogum_kontrol(update, context):
 
 # ================= KOMUTLAR =================
 async def mesaj_liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # sadece grup
     if update.effective_chat.type not in ["group", "supergroup"]:
         return
 
-    # sadece admin
     if not await is_admin(update, context):
         await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
         return
 
-    if not MESSAGE_COUNT:
+    chat_id = update.effective_chat.id
+    rows = db_get_top_messages(chat_id)
+
+    if not rows:
         await update.message.reply_text("📭 Henüz mesaj verisi yok.")
         return
 
-    top_users = sorted(
-        MESSAGE_COUNT.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:10]
-
     text = "📊 **Mesaj Sıralaması (İlk 10)**\n\n"
 
-    for i, (uid, count) in enumerate(top_users, start=1):
+    for i, row in enumerate(rows, start=1):
+        user_id = row["user_id"]
+        count = row["message_count"]
+
         try:
-            member = await context.bot.get_chat_member(update.effective_chat.id, uid)
+            member = await context.bot.get_chat_member(chat_id, user_id)
             name = member.user.first_name
         except:
             name = "Bilinmeyen"
 
-        text += f"{i}. [{name}](tg://user?id={uid}) — **{count} mesaj**\n"
+        text += f"{i}. [{name}](tg://user?id={user_id}) — **{count} mesaj**\n"
 
     await update.message.reply_text(text, parse_mode="Markdown")
 
@@ -1119,8 +1163,12 @@ async def liste_sifirla(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
         return
 
-    MESSAGE_COUNT.clear()
+    chat_id = update.effective_chat.id
+    db_reset_messages(chat_id)
+
     await update.message.reply_text("🧹 Mesaj listesi sıfırlandı.")
+
+
 
 
 
