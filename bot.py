@@ -392,6 +392,155 @@ DOGUM_SITELER = {
     "Artemisbet": "https://shoort.im/artemisbet",
 }
 
+DENEME_PER_PAGE = 10
+
+DENEME_LISTESI = [
+    ("Betkom 1000₺", "https://shoort.im/betkom"),
+    ("Dodobet 1000₺", "https://shoort.im/dodo"),
+    ("Romabet 2500₺", "https://shoort.im/romabet"),
+    ("Xbahis 250₺", "https://shoort.im/xbahis"),
+    ("Otobet 800₺", "https://shoort.im/otobet"),
+    ("Grandpasha 500₺", "https://shoort.im/grandpasha"),
+    ("Mariobet 1000₺", "https://shoort.im/mariobonus"),
+    ("Tarafbet 1000₺", "https://shoort.im/tarafbet"),
+    ("Huqqabet 444₺", "https://shoort.im/huqqa"),
+    ("Locabet 444₺", "https://shoort.im/locabet"),
+    ("Mersobahis 444FS", "https://shoort.im/merso"),
+    ("Amgbahis 333FS", "https://shoort.im/amg"),
+    ("Hepbet 500₺", "https://shoort.im/hepbet"),
+    ("Egebet 100₺", "https://shoort.im/egebet"),
+    ("Goldenbahis 50FS", "https://shoort.im/goldenbahis"),
+    ("Betigma 250₺", "https://shoort.im/betigma"),
+    ("Nerobet 50FS", "https://shoort.im/nerobet"),
+    ("Goldengate 1000₺", "https://shoort.im/goldengate"),
+    ("Ngsbahis 50FS", "https://shoort.im/ngsbahis"),
+    ("Gettobet 100₺", "https://shoort.im/gettobet"),
+    ("Betrupi 111₺", "https://shoort.im/betrupi"),
+    ("Kingroyal 1000₺", "https://shoort.im/kingroyal"),
+    ("Madridbet 1000₺", "https://shoort.im/madridbet"),
+    ("Meritking 1000₺", "https://shoort.im/meritking"),
+    ("Hızlıcasino 200FS", "https://shoort.im/hizlicasino"),
+    ("Heybet 500₺", "https://shoort.im/heybet"),
+    ("Meritwin 300₺", "https://shoort.im/meritwin"),
+    ("Golegol 500₺", "https://shoort.im/golegol"),
+    ("Venombet 555₺", "https://shoort.im/venombet"),
+    ("Palazzo 300₺", "https://shoort.im/palazzo"),
+    ("Fixbet 1000₺", "https://shoort.im/fixbet"),
+    ("Matadorbet 1000₺", "https://shoort.im/matador"),
+    ("Zbahis 1000₺", "https://shoort.im/zbahis"),
+    ("Saltbahis 100FS", "https://shoort.im/saltbahis"),
+    ("Betorbet 1000₺", "https://shoort.im/betorbet"),
+    ("Virabet 500₺", "https://shoort.im/virabet"),
+    ("Betlike 250₺", "https://shoort.im/betlike"),
+    ("Betticket 750₺", "https://shoort.im/betticket"),
+    ("Bahislion 250₺", "https://shoort.im/bahislion"),
+    ("Winbir 500FS", "https://shoort.im/winbir"),
+    ("Betpir 250₺", "https://shoort.im/betpir"),
+    ("ByCasino 750₺", "https://shoort.im/bycasino"),
+    ("Bayspin 500₺", "https://shoort.im/bayspinn"),
+    ("Bahisbudur 250FS", "https://shoort.im/bahisbudur"),
+    ("İkasbet 250₺", "https://shoort.im/ikasbet"),
+    ("Pusulabet 400₺", "https://shoort.im/pusulabet"),
+    ("Starzbet 750₺", "https://shoort.im/starzbet"),
+    ("Ramadabet 300₺", "https://shoort.im/ramadabet"),
+    ("Padişahbet 1000₺", "https://shoort.im/padisahbet"),
+    ("Casinra 100₺", "https://shoort.im/casinra"),
+    ("Betroz 2500₺", "https://shoort.im/betroz"),
+    ("Makrobet 1000₺", "https://shoort.im/makrobet"),
+    ("Betra 200₺", "https://shoort.im/betra"),
+    ("Netbahis 200₺", "https://shoort.im/netbahis"),
+    ("Roketbet 500₺", "https://shoort.im/roketbet"),
+    ("Betgar 1000₺", "https://shoort.im/betgar"),
+    ("Pradabet 500FS", "https://shoort.im/pradabet"),
+    ("Festwin 30₺", "https://shoort.im/festwin"),
+    ("Yedibahis 1000₺", "https://shoort.im/yedibahis"),
+    ("Bekabet 250₺", "https://shoort.im/bekabet"),
+    ("Titobet 1000₺", "https://shoort.im/titobet"),
+    ("Betci 200FS", "https://shoort.im/betci"),
+    ("Betbox 200FS", "https://shoort.im/betbox"),
+    ("Alfabahis 50FS", "https://shoort.im/alfabahis"),
+    ("Hiltonbet 50FS", "https://shoort.im/hiltonbet"),
+    ("Baywin 500₺", "https://shoort.im/baywinn"),
+    ("Betorspin 888₺", "https://shoort.im/betorspinn"),
+    ("Betine 1000₺", "https://shoort.im/betinee"),
+    ("Betist 250₺", "https://shoort.im/betist"),
+    ("Masterbetting 250₺", "https://shoort.im/masterbetting"),
+    ("Betpipo 500₺", "https://shoort.im/betpipo"),
+    ("Sahabet 1000₺", "https://shoort.im/sahabet"),
+    ("Stake 21$", "https://shoort.im/stake"),
+    ("Onwin 750₺", "https://shoort.im/onwin"),
+    ("Tipobet 750₺", "https://shoort.im/tipobet"),
+    ("Solobet 666₺", "https://shoort.im/solo"),
+    ("Süpertoto 1000₺", "https://shoort.im/supertotobet"),
+    ("Ligobet 750₺", "https://shoort.im/ligobet"),
+    ("Hilarionbet 500₺", "https://shoort.im/hilarionbet"),
+    ("Dengebet 250₺", "https://shoort.im/dengebet"),
+    ("Bahiscom 750₺", "https://shoort.im/bahisbonus"),
+    ("Hitbet 100₺", "https://shoort.im/hitbet"),
+    ("Betoffice 100₺", "https://shoort.im/betoffice"),
+    ("Galabet 500₺", "https://shoort.im/galabet"),
+    ("Leograndbet 1000₺", "https://shoort.im/leograndbet"),
+    ("Casinowon 1000₺", "https://shoort.im/casinowon"),
+    ("TlCasino 2000₺", "https://shoort.im/tlcasino"),
+    ("WBahis 3000₺", "https://shoort.im/wbahis"),
+    ("BahisCasino 5000₺", "https://shoort.im/bahiscasino"),
+    ("Starora 1000₺", "https://shoort.im/starora"),
+    ("Grbets 100₺", "https://shoort.im/grbets"),
+    ("Maksibet 200₺", "https://shoort.im/maksibet"),
+    ("Mercure 200₺", "https://shoort.im/mercure"),
+    ("Rbet 500₺", "https://shoort.im/rbet"),
+    ("Favorislot 100FS", "https://shoort.im/favorislot"),
+    ("Paşacasino 200₺", "https://shoort.im/pasacasino"),
+    ("Gorabet 1000₺", "https://shoort.im/gorabet"),
+    ("Norabahis 100FS", "https://shoort.im/norabahis"),
+    ("Xslot 1000₺", "https://shoort.im/xslot"),
+    ("Spinco 200₺", "https://shoort.im/spinco"),
+    ("Süperbet 250₺", "https://shoort.im/superbet"),
+    ("Betsin 2500₺", "https://shoort.im/betsin"),
+    ("Dedebet 250₺", "https://shoort.im/dedebet"),
+    ("Maxwin 300₺", "https://shoort.im/maxwin"),
+    ("Damabet 250₺", "https://shoort.im/damabet"),
+    ("Palacebet 500₺", "https://shoort.im/palacebet"),
+    ("Betwoon 250₺", "https://shoort.im/betwoon"),
+    ("Cratosbet 500₺", "https://shoort.im/cratosbet"),
+    ("Betwild 200₺", "https://shoort.im/betwild"),
+    ("Pashagaming 300₺", "https://shoort.im/pashagaming"),
+    ("Hızlıbahis 250₺", "https://shoort.im/hızlıbahis"),
+    ("Royalbet 250₺", "https://shoort.im/royalbet"),
+    ("Radissonbet 300₺", "https://shoort.im/radissonbet"),
+    ("Betsalvador 100₺", "https://shoort.im/betsalvador"),
+    ("GoBahis 500₺", "https://shoort.im/gobonus"),
+]
+
+def deneme_keyboard(page: int):
+    start = page * DENEME_PER_PAGE
+    end = start + DENEME_PER_PAGE
+    items = DENEME_LISTESI[start:end]
+
+    buttons = []
+    for name, link in items:
+        buttons.append([
+            InlineKeyboardButton(name, url=link)
+        ])
+
+    nav = []
+    if page > 0:
+        nav.append(
+            InlineKeyboardButton("⬅️ Önceki", callback_data=f"deneme:{page-1}")
+        )
+    if end < len(DENEME_LISTESI):
+        nav.append(
+            InlineKeyboardButton("➡️ Sonraki", callback_data=f"deneme:{page+1}")
+        )
+
+    if nav:
+        buttons.append(nav)
+
+    return InlineKeyboardMarkup(buttons)
+
+
+
+
 # ================= STATE =================
 import time
 
@@ -1124,6 +1273,15 @@ async def dogum_kontrol(update, context):
         )
 
 # ================= KOMUTLAR =================
+async def deneme(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🎁 **Deneme Bonusu Listesi 📢**",
+        reply_markup=deneme_keyboard(0),
+        parse_mode="Markdown"
+    )
+
+
+
 async def mesaj_liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type not in ["group", "supergroup"]:
         return
@@ -1255,6 +1413,17 @@ async def sponsor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
+async def deneme_page_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    page = int(query.data.split(":")[1])
+
+    await query.edit_message_reply_markup(
+        reply_markup=deneme_keyboard(page)
+    )
+
+
 
 
 
@@ -1266,6 +1435,8 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("sponsor", sponsor))
 app.add_handler(CommandHandler("filtre", add_filter))
 app.add_handler(CommandHandler("remove", remove_filter))
+app.add_handler(CommandHandler("deneme", deneme))
+
 
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
@@ -1288,6 +1459,11 @@ app.add_handler(
 app.add_handler(
     CallbackQueryHandler(sponsor_page_callback, pattern=r"^sponsor:\d+")
 )
+
+app.add_handler(
+    CallbackQueryHandler(deneme_page_callback, pattern=r"^deneme:\d+")
+)
+
 
 
 # ================= TEXT (KOMUT HARİÇ) =================
