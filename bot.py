@@ -7,7 +7,8 @@ import time
 import base64
 from collections import defaultdict
 
-MESSAGE_COUNTER = defaultdict(int)
+MESSAGE_COUNT = defaultdict(int)
+
 
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -499,17 +500,12 @@ async def message_counter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if update.message.sender_chat:
         return
-
-    chat = update.effective_chat
-    if chat.type not in ["group", "supergroup"]:
+    if update.message.from_user.is_bot:
         return
 
-    user = update.message.from_user
-    if not user:
-        return
+    uid = update.message.from_user.id
+    MESSAGE_COUNT[uid] += 1
 
-    key = (chat.id, user.id)
-    MESSAGE_COUNTER[key] += 1
 
 
 async def forward_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1083,37 +1079,50 @@ async def dogum_kontrol(update, context):
 
 # ================= KOMUTLAR =================
 async def mesaj_liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # sadece grup
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return
+
+    # sadece admin
     if not await is_admin(update, context):
+        await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
         return
 
-    chat_id = update.effective_chat.id
-
-    users = [
-        (uid, count)
-        for (cid, uid), count in MESSAGE_COUNTER.items()
-        if cid == chat_id
-    ]
-
-    if not users:
-        await update.message.reply_text("Henüz mesaj verisi yok.")
+    if not MESSAGE_COUNT:
+        await update.message.reply_text("📭 Henüz mesaj verisi yok.")
         return
 
-    users.sort(key=lambda x: x[1], reverse=True)
-    top10 = users[:10]
+    top_users = sorted(
+        MESSAGE_COUNT.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:10]
 
-    text = "📊 **En Çok Mesaj Atan 10 Üye**\n\n"
+    text = "📊 **Mesaj Sıralaması (İlk 10)**\n\n"
 
-    for i, (user_id, count) in enumerate(top10, 1):
+    for i, (uid, count) in enumerate(top_users, start=1):
         try:
-            member = await context.bot.get_chat_member(chat_id, user_id)
+            member = await context.bot.get_chat_member(update.effective_chat.id, uid)
             name = member.user.first_name
-            mention = f"[{name}](tg://user?id={user_id})"
         except:
-            mention = f"`{user_id}`"
+            name = "Bilinmeyen"
 
-        text += f"{i}. {mention} — **{count} mesaj**\n"
+        text += f"{i}. [{name}](tg://user?id={uid}) — **{count} mesaj**\n"
 
     await update.message.reply_text(text, parse_mode="Markdown")
+
+async def liste_sifirla(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return
+
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
+        return
+
+    MESSAGE_COUNT.clear()
+    await update.message.reply_text("🧹 Mesaj listesi sıfırlandı.")
+
+
 
 
 async def ban(update, context):
