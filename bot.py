@@ -747,6 +747,17 @@ async def ai_image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.photo:
         return
 
+    chat = update.effective_chat
+
+    # 👥 GRUP / SUPERGROUP → SADECE ETİKETLİ FOTO
+    if chat.type in ["group", "supergroup"]:
+        caption = update.message.caption or ""
+        bot_username = context.bot.username.lower()
+
+        # foto açıklamasında @botadi yoksa cevap verme
+        if f"@{bot_username}" not in caption.lower():
+            return
+
     photo = update.message.photo[-1]
     file = await context.bot.get_file(photo.file_id)
 
