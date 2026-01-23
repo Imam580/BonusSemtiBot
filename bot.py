@@ -1454,18 +1454,28 @@ async def cekilis(update, context):
         [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
     ])
 
+    caption = (
+        "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
+        "🔥 Katılımcı Sayısı: **0**\n\n"
+        "🏆 **Katılımcıların kanallarımızı takip etmesi zorunludur!**\n\n"
+        "🔗 https://t.me/Canli_Izleme_Mac_Linkleri\n"
+        "🔗 https://t.me/plasespor\n"
+        "🔗 https://t.me/bonussemti\n"
+        "🔗 https://t.me/bonussemtietkinlik\n"
+        "🔗 https://t.me/hergunikioran\n"
+        "🔗 https://t.me/BahisKarhanesi\n"
+        "🔗 https://t.me/ozel_oran_2024"
+    )
+
     with open("cekilis.jpg", "rb") as photo:
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=photo,
-            caption=(
-                "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
-                "🔥 Katılımcı Sayısı: **0**\n\n"
-                "🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!"
-            ),
+            caption=caption,
             reply_markup=keyboard,
             parse_mode="Markdown"
         )
+
 
 async def cekilis_katil(update, context):
     query = update.callback_query
@@ -1509,56 +1519,76 @@ async def sayi(update, context):
         parse_mode="Markdown"
     )
 
-async def kontrol(update, context):
+async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
+        await update.message.reply_text("❌ Bu komut sadece adminler içindir.")
         return
 
-    chat_id = update.effective_chat.id
-    katilimcilar = CEKILIS[chat_id]["katilimcilar"]
+    if not CEKILIS_KATILIMCILAR:
+        await update.message.reply_text("📭 Katılımcı yok.")
+        return
 
-    gecerli = []
+    zorunlu_kanallar = [
+        "@Canli_Izleme_Mac_Linkleri",
+        "@plasespor",
+        "@bonussemti",
+        "@bonussemtietkinlik",
+        "@hergunikioran",
+        "@BahisKarhanesi",
+        "@ozel_oran_2024",
+    ]
 
-    for uid in katilimcilar:
-        ok = True
-        for kanal in ZORUNLU_KANALLAR:
+    gecenler = []
+
+    for user_id in CEKILIS_KATILIMCILAR:
+        uye_ok = True
+
+        for kanal in zorunlu_kanallar:
             try:
-                member = await context.bot.get_chat_member(kanal, uid)
-                if member.status == ChatMemberStatus.LEFT:
-                    ok = False
+                member = await context.bot.get_chat_member(kanal, user_id)
+                if member.status not in ("member", "administrator", "creator"):
+                    uye_ok = False
+                    break
             except:
-                ok = False
-        if ok:
-            gecerli.append(uid)
+                uye_ok = False
+                break
 
-    CEKILIS[chat_id]["katilimcilar"] = set(gecerli)
+        if uye_ok:
+            gecenler.append(user_id)
 
-    await update.message.reply_text(
-        f"✅ Kanal kontrolü yapıldı\nGeçerli katılımcı: **{len(gecerli)}**",
-        parse_mode="Markdown"
-    )
-
-async def bitir(update, context):
-    if not await is_admin(update, context):
+    if not gecenler:
+        await update.message.reply_text("❌ Şartları sağlayan kimse yok.")
         return
 
-    chat_id = update.effective_chat.id
-    data = CEKILIS.get(chat_id)
-
-    if not data:
-        return
-
-    kazananlar = random.sample(
-        list(data["katilimcilar"]),
-        min(data["kazanan_sayi"], len(data["katilimcilar"]))
-    )
-
-    text = "🏆 **KAZANANLAR** 🏆\n\n"
-    for uid in kazananlar:
-        text += f"🎉 <a href='tg://user?id={uid}'>Kazanan</a>\n"
-
-    CEKILIS.pop(chat_id, None)
+    text = "✅ **Şartları Sağlayanlar:**\n\n"
+    for uid in gecenler:
+        text += f"👤 <a href='tg://user?id={uid}'>Kazanan</a>\n"
 
     await update.message.reply_text(text, parse_mode="HTML")
+
+
+async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Yetkin yok.")
+        return
+
+    if not KAZANANLAR:
+        await update.message.reply_text("❌ Kazanan yok.")
+        return
+
+    text = "🏆 <b>KAZANANLAR</b>\n\n"
+
+    for uid in KAZANANLAR:
+        try:
+            member = await context.bot.get_chat_member(update.effective_chat.id, uid)
+            name = member.user.first_name
+        except:
+            name = "Kazanan"
+
+        text += f"🎉 <a href='tg://user?id={uid}'>{name}</a>\n"
+
+    await update.message.reply_text(text, parse_mode="HTML")
+
 
 
 
