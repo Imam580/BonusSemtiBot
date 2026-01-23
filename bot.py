@@ -5,6 +5,10 @@ import re
 import requests
 import time
 import base64
+from collections import defaultdict
+
+MESSAGE_COUNTER = defaultdict(int)
+
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
@@ -489,6 +493,24 @@ async def remove_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= GUARD FONKSİYONLARI =================
 # 👇👇👇 BURAYA YAZACAKSIN 👇👇👇
+
+async def message_counter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+    if update.message.sender_chat:
+        return
+
+    chat = update.effective_chat
+    if chat.type not in ["group", "supergroup"]:
+        return
+
+    user = update.message.from_user
+    if not user:
+        return
+
+    key = (chat.id, user.id)
+    MESSAGE_COUNTER[key] += 1
+
 
 async def forward_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -1060,6 +1082,40 @@ async def dogum_kontrol(update, context):
         )
 
 # ================= KOMUTLAR =================
+async def mesaj_liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    chat_id = update.effective_chat.id
+
+    users = [
+        (uid, count)
+        for (cid, uid), count in MESSAGE_COUNTER.items()
+        if cid == chat_id
+    ]
+
+    if not users:
+        await update.message.reply_text("Henüz mesaj verisi yok.")
+        return
+
+    users.sort(key=lambda x: x[1], reverse=True)
+    top10 = users[:10]
+
+    text = "📊 **En Çok Mesaj Atan 10 Üye**\n\n"
+
+    for i, (user_id, count) in enumerate(top10, 1):
+        try:
+            member = await context.bot.get_chat_member(chat_id, user_id)
+            name = member.user.first_name
+            mention = f"[{name}](tg://user?id={user_id})"
+        except:
+            mention = f"`{user_id}`"
+
+        text += f"{i}. {mention} — **{count} mesaj**\n"
+
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
 async def ban(update, context):
     if not await is_admin(update, context):
         return
@@ -1162,6 +1218,9 @@ app.add_handler(CommandHandler("unmute", unmute))
 app.add_handler(CommandHandler("lock", lock))
 app.add_handler(CommandHandler("unlock", unlock))
 
+# 🆕 mesaj listesi
+app.add_handler(CommandHandler("MesajListe", mesaj_liste))
+
 
 # ================= CALLBACK =================
 app.add_handler(
@@ -1173,11 +1232,11 @@ app.add_handler(
 )
 
 
+# ================= TEXT (KOMUT HARİÇ) =================
+TEXT_NO_COMMAND = filters.TEXT & ~filters.COMMAND
+
+
 # ================= 1️⃣ ÖZEL CEVAPLAR =================
-# ⚠️ Komutlar hariç tutulur (ÇOK ÖNEMLİ)
-
-TEXT_NO_COMMAND = filters.TEXT & ~filters.COMMAND & ~filters.Regex(r"^/")
-
 app.add_handler(
     MessageHandler(TEXT_NO_COMMAND, every_kontrol),
     group=1
@@ -1199,8 +1258,14 @@ app.add_handler(
 )
 
 
-# ================= 2️⃣ GENEL KORUMALAR =================
+# ================= 🧮 MESAJ SAYACI =================
+app.add_handler(
+    MessageHandler(TEXT_NO_COMMAND, message_counter),
+    group=5
+)
 
+
+# ================= 2️⃣ GENEL KORUMALAR =================
 app.add_handler(
     MessageHandler(filters.FORWARDED, forward_guard),
     group=10
@@ -1212,8 +1277,7 @@ app.add_handler(
 )
 
 
-# ================= 🚨 3️⃣ FLOOD / SPAM (EN SON) =================
-
+# ================= 🚨 3️⃣ FLOOD / SPAM =================
 app.add_handler(
     MessageHandler(TEXT_NO_COMMAND, spam_guard),
     group=99
@@ -1221,7 +1285,6 @@ app.add_handler(
 
 
 # ================= 🤖 AI =================
-
 app.add_handler(
     MessageHandler(filters.PHOTO, ai_image_handler),
     group=190
