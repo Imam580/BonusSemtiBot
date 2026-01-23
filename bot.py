@@ -1602,6 +1602,37 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text, parse_mode="HTML")
 
+async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
+        return
+
+    chat_id = update.effective_chat.id
+
+    if chat_id not in CEKILIS or not CEKILIS[chat_id]["aktif"]:
+        await update.message.reply_text("❌ Aktif bir çekiliş yok. Önce /cekilis başlat.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("Kullanım: /sayi 2")
+        return
+
+    try:
+        adet = int(context.args[0])
+        if adet < 1:
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text("❌ Geçerli bir sayı gir. (Örn: /sayi 3)")
+        return
+
+    CEKILIS[chat_id]["kazanan_sayi"] = adet
+
+    await update.message.reply_text(
+        f"🎯 Kazanan sayısı **{adet}** olarak ayarlandı.",
+        parse_mode="Markdown"
+    )
+
+
 
 
 
