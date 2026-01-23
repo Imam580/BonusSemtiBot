@@ -1440,7 +1440,6 @@ async def deneme_page_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
-        await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
         return
 
     chat_id = update.effective_chat.id
@@ -1449,10 +1448,9 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "aktif": True,
         "katilimcilar": set(),
         "kazananlar": [],
-        "kazanan_sayi": 1
+        "kazanan_sayi": 1,
+        "mesaj_id": None
     }
-
-    await update.message.reply_text("🎉 Çekiliş başlatılıyor...")
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
@@ -1468,45 +1466,42 @@ async def cekilis(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔗 https://t.me/bonussemtietkinlik\n"
         "🔗 https://t.me/hergunikioran\n"
         "🔗 https://t.me/BahisKarhanesi\n"
-        "🔗 https://t.me/ozel_oran_2024\n\n"
-        f"⏱ Başlangıç: {datetime.now().strftime('%H:%M:%S')}"
+        "🔗 https://t.me/ozel_oran_2024"
     )
 
-    try:
-        with open("cekilis.jpg", "rb") as photo:
-            await context.bot.send_photo(
-                chat_id=chat_id,
-                photo=photo,
-                caption=caption,
-                reply_markup=keyboard,
-                parse_mode="HTML"
-            )
-    except Exception as e:
-        await update.message.reply_text(f"❌ Hata:\n{e}")
+    msg = await context.bot.send_photo(
+        chat_id=chat_id,
+        photo=open("cekilis.jpg", "rb"),
+        caption=caption,
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+
+    CEKILIS[chat_id]["mesaj_id"] = msg.message_id
 
 
 
 async def cekilis_katil(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer("Çekilişe katıldın ✅")
+    await query.answer("Çekilişe katıldın ✅", show_alert=False)
 
     chat_id = query.message.chat.id
     user_id = query.from_user.id
 
-    if chat_id not in CEKILIS or not CEKILIS[chat_id]["aktif"]:
+    data = CEKILIS.get(chat_id)
+    if not data or not data["aktif"]:
         return
 
-    # aynı kişi 2. kez katılamaz
-    if user_id in CEKILIS[chat_id]["katilimcilar"]:
+    if user_id in data["katilimcilar"]:
         return
 
-    CEKILIS[chat_id]["katilimcilar"].add(user_id)
-    sayi = len(CEKILIS[chat_id]["katilimcilar"])
+    data["katilimcilar"].add(user_id)
+    sayi = len(data["katilimcilar"])
 
     caption = (
-        "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
-        f"🔥 Katılımcı Sayısı: **{sayi}**\n\n"
-        "🏆 **Katılımcıların kanallarımızı takip etmesi zorunludur!**\n\n"
+        "<b>🔥 BONUSSEMTİ ÇEKİLİŞİ</b>\n\n"
+        f"🔥 Katılımcı Sayısı: <b>{sayi}</b>\n\n"
+        "<b>🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!</b>\n\n"
         "🔗 https://t.me/Canli_Izleme_Mac_Linkleri\n"
         "🔗 https://t.me/plasespor\n"
         "🔗 https://t.me/bonussemti\n"
@@ -1516,15 +1511,16 @@ async def cekilis_katil(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔗 https://t.me/ozel_oran_2024"
     )
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
-    ])
-
-    await query.message.edit_caption(
+    await context.bot.edit_message_caption(
+        chat_id=chat_id,
+        message_id=data["mesaj_id"],
         caption=caption,
-        reply_markup=keyboard,
-        parse_mode="Markdown"
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
+        ]),
+        parse_mode="HTML"
     )
+
 
 
 async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1547,10 +1543,14 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data["kazananlar"] = kazananlar
 
-    await update.message.reply_text(
-        f"🎯 {len(kazananlar)} kazanan belirlendi.\n"
-        f"Şimdi /kontrol ile şartları kontrol edebilirsin."
-    )
+    text = "🎉 <b>KAZANANLAR</b>\n\n"
+    for uid in kazananlar:
+        text += f"🏆 <a href='tg://user?id={uid}'>Kazanan</a>\n"
+
+    text += "\n🔍 Şimdi /kontrol yazarak kanal kontrolünü yapabilirsin."
+
+    await update.message.reply_text(text, parse_mode="HTML")
+
 
 
 async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1565,14 +1565,14 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     gecenler = []
+    elenenler = []
 
     for uid in data["kazananlar"]:
         uye_ok = True
-
         for kanal in ZORUNLU_KANALLAR:
             try:
-                member = await context.bot.get_chat_member(kanal, uid)
-                if member.status not in ("member", "administrator", "creator"):
+                m = await context.bot.get_chat_member(kanal, uid)
+                if m.status not in ("member", "administrator", "creator"):
                     uye_ok = False
                     break
             except:
@@ -1581,16 +1581,25 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if uye_ok:
             gecenler.append(uid)
+        else:
+            elenenler.append(uid)
 
-    if not gecenler:
-        await update.message.reply_text("❌ Şartları sağlayan kimse yok.")
-        return
+    text = "<b>📋 KONTROL SONUCU</b>\n\n"
 
-    text = "🏆 <b>KAZANANLAR</b>\n\n"
-    for uid in gecenler:
-        text += f"🎉 <a href='tg://user?id={uid}'>Kazanan</a>\n"
+    if gecenler:
+        text += "✅ <b>Şartları Sağlayanlar</b>\n"
+        for uid in gecenler:
+            text += f"🎉 <a href='tg://user?id={uid}'>Kazanan</a>\n"
+    else:
+        text += "❌ Şartları sağlayan yok.\n"
+
+    if elenenler:
+        text += "\n⛔ <b>Elenenler</b>\n"
+        for uid in elenenler:
+            text += f"🚫 <a href='tg://user?id={uid}'>Elendi</a>\n"
 
     await update.message.reply_text(text, parse_mode="HTML")
+
 
 async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
