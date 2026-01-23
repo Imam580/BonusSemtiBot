@@ -8,6 +8,21 @@ import base64
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ChatMemberStatus
+import random
+
+CEKILIS = {}
+ZORUNLU_KANALLAR = [
+    "@Canli_Izleme_Mac_Linkleri",
+    "@plasespor",
+    "@bonussemti",
+    "@bonussemtietkinlik",
+    "@hergunikioran",
+    "@BahisKarhanesi",
+    "@ozel_oran_2024",
+]
+
 
 
 TR_TZ = ZoneInfo("Europe/Istanbul")
@@ -1423,6 +1438,133 @@ async def deneme_page_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         reply_markup=deneme_keyboard(page)
     )
 
+async def cekilis(update, context):
+    if not await is_admin(update, context):
+        return
+
+    chat_id = update.effective_chat.id
+
+    CEKILIS[chat_id] = {
+        "aktif": True,
+        "katilimcilar": set(),
+        "kazanan_sayi": 1
+    }
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
+    ])
+
+    with open("cekilis.jpg", "rb") as photo:
+        await context.bot.send_photo(
+            chat_id=chat_id,
+            photo=photo,
+            caption=(
+                "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
+                "🔥 Katılımcı Sayısı: **0**\n\n"
+                "🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!"
+            ),
+            reply_markup=keyboard,
+            parse_mode="Markdown"
+        )
+
+async def cekilis_katil(update, context):
+    query = update.callback_query
+    await query.answer("Çekilişe katıldın ✅")
+
+    chat_id = query.message.chat.id
+    user_id = query.from_user.id
+
+    if chat_id not in CEKILIS or not CEKILIS[chat_id]["aktif"]:
+        return
+
+    CEKILIS[chat_id]["katilimcilar"].add(user_id)
+    sayi = len(CEKILIS[chat_id]["katilimcilar"])
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎉 Katıl", callback_data="cekilis_katil")]
+    ])
+
+    await query.message.edit_caption(
+        caption=(
+            "🔥 **BONUSSEMTİ ÇEKİLİŞİ**\n\n"
+            f"🔥 Katılımcı Sayısı: **{sayi}**\n\n"
+            "🏆 Katılımcıların kanallarımızı takip etmesi zorunludur!"
+        ),
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+async def sayi(update, context):
+    if not await is_admin(update, context):
+        return
+
+    chat_id = update.effective_chat.id
+
+    if not context.args:
+        return
+
+    CEKILIS[chat_id]["kazanan_sayi"] = int(context.args[0])
+    await update.message.reply_text(
+        f"🎯 Kazanan sayısı **{context.args[0]}** olarak ayarlandı",
+        parse_mode="Markdown"
+    )
+
+async def kontrol(update, context):
+    if not await is_admin(update, context):
+        return
+
+    chat_id = update.effective_chat.id
+    katilimcilar = CEKILIS[chat_id]["katilimcilar"]
+
+    gecerli = []
+
+    for uid in katilimcilar:
+        ok = True
+        for kanal in ZORUNLU_KANALLAR:
+            try:
+                member = await context.bot.get_chat_member(kanal, uid)
+                if member.status == ChatMemberStatus.LEFT:
+                    ok = False
+            except:
+                ok = False
+        if ok:
+            gecerli.append(uid)
+
+    CEKILIS[chat_id]["katilimcilar"] = set(gecerli)
+
+    await update.message.reply_text(
+        f"✅ Kanal kontrolü yapıldı\nGeçerli katılımcı: **{len(gecerli)}**",
+        parse_mode="Markdown"
+    )
+
+async def bitir(update, context):
+    if not await is_admin(update, context):
+        return
+
+    chat_id = update.effective_chat.id
+    data = CEKILIS.get(chat_id)
+
+    if not data:
+        return
+
+    kazananlar = random.sample(
+        list(data["katilimcilar"]),
+        min(data["kazanan_sayi"], len(data["katilimcilar"]))
+    )
+
+    text = "🏆 **KAZANANLAR** 🏆\n\n"
+    for uid in kazananlar:
+        text += f"🎉 <a href='tg://user?id={uid}'>Kazanan</a>\n"
+
+    CEKILIS.pop(chat_id, None)
+
+    await update.message.reply_text(text, parse_mode="HTML")
+
+
+
+
+
+
 
 
 
@@ -1437,16 +1579,21 @@ app.add_handler(CommandHandler("filtre", add_filter))
 app.add_handler(CommandHandler("remove", remove_filter))
 app.add_handler(CommandHandler("deneme", deneme))
 
+# 🎁 ÇEKİLİŞ KOMUTLARI
+app.add_handler(CommandHandler("cekilis", cekilis))
+app.add_handler(CommandHandler("sayi", sayi))
+app.add_handler(CommandHandler("bitir", bitir))
+app.add_handler(CommandHandler("kontrol", kontrol))
 
+# 👮‍♂️ ADMIN
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("mute", mute))
 app.add_handler(CommandHandler("unmute", unmute))
-
 app.add_handler(CommandHandler("lock", lock))
 app.add_handler(CommandHandler("unlock", unlock))
 
-# 🆕 mesaj listesi
+# 🆕 MESAJ LİSTESİ
 app.add_handler(CommandHandler("MesajListe", mesaj_liste))
 app.add_handler(CommandHandler("listesifirla", liste_sifirla))
 
@@ -1464,6 +1611,10 @@ app.add_handler(
     CallbackQueryHandler(deneme_page_callback, pattern=r"^deneme:\d+")
 )
 
+# 🎯 ÇEKİLİŞ KATIL BUTONU
+app.add_handler(
+    CallbackQueryHandler(cekilis_katil, pattern="^cekilis_katil$")
+)
 
 
 # ================= TEXT (KOMUT HARİÇ) =================
