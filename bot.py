@@ -1229,6 +1229,7 @@ app.add_handler(CommandHandler("unlock", unlock))
 
 # 🆕 mesaj listesi
 app.add_handler(CommandHandler("MesajListe", mesaj_liste))
+app.add_handler(CommandHandler("listesifirla", liste_sifirla))
 
 
 # ================= CALLBACK =================
@@ -1313,6 +1314,7 @@ if __name__ == "__main__":
     print("CACHE DOLDU:", len(SPONSOR_CACHE))
 
     app.run_polling(drop_pending_updates=True)
+
 
 
 
