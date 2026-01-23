@@ -1489,6 +1489,10 @@ async def cekilis_katil(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_id not in CEKILIS or not CEKILIS[chat_id]["aktif"]:
         return
 
+    # aynı kişi 2. kez katılamaz
+    if user_id in CEKILIS[chat_id]["katilimcilar"]:
+        return
+
     CEKILIS[chat_id]["katilimcilar"].add(user_id)
     sayi = len(CEKILIS[chat_id]["katilimcilar"])
 
@@ -1537,8 +1541,10 @@ async def bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data["kazananlar"] = kazananlar
 
     await update.message.reply_text(
-        f"🎯 {len(kazananlar)} kazanan belirlendi.\n/kontrol ile kontrol edebilirsin."
+        f"🎯 {len(kazananlar)} kazanan belirlendi.\n"
+        f"Şimdi /kontrol ile şartları kontrol edebilirsin."
     )
+
 
 async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
@@ -1555,10 +1561,11 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for uid in data["kazananlar"]:
         uye_ok = True
+
         for kanal in ZORUNLU_KANALLAR:
             try:
-                m = await context.bot.get_chat_member(kanal, uid)
-                if m.status not in ("member", "administrator", "creator"):
+                member = await context.bot.get_chat_member(kanal, uid)
+                if member.status not in ("member", "administrator", "creator"):
                     uye_ok = False
                     break
             except:
@@ -1569,7 +1576,7 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
             gecenler.append(uid)
 
     if not gecenler:
-        await update.message.reply_text("❌ Şartları sağlayan yok.")
+        await update.message.reply_text("❌ Şartları sağlayan kimse yok.")
         return
 
     text = "🏆 <b>KAZANANLAR</b>\n\n"
@@ -1577,6 +1584,38 @@ async def kontrol(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += f"🎉 <a href='tg://user?id={uid}'>Kazanan</a>\n"
 
     await update.message.reply_text(text, parse_mode="HTML")
+
+async def sayi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Bu komutu sadece adminler kullanabilir.")
+        return
+
+    chat_id = update.effective_chat.id
+
+    if chat_id not in CEKILIS:
+        await update.message.reply_text("❌ Aktif bir çekiliş yok.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("Kullanım: /sayi 2")
+        return
+
+    try:
+        adet = int(context.args[0])
+        if adet < 1:
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text("❌ Geçerli bir sayı gir.")
+        return
+
+    CEKILIS[chat_id]["kazanan_sayi"] = adet
+
+    await update.message.reply_text(
+        f"🎯 Kazanan sayısı **{adet}** olarak ayarlandı.",
+        parse_mode="Markdown"
+    )
+
+
 
 
 
